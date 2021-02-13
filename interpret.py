@@ -1,10 +1,60 @@
 import re
-from xml.dom.minidom import parse, parseString
+import xml.etree.ElementTree as ET
 import argparse
 import sys
 
+LF = {}
+GF = {}
+TF = {}
+
+f_stack = []
+f_stack.append(LF)
+
+ramec = {
+    'GF': GF,
+    'LF': LF,
+    'TF': TF,
+}
+arg_types = {
+    "MOVE": ["var", "symb", ],
+    "CREATEFRAME": [],
+    "PUSHFRAME": [],
+    "POPFRAME": [],
+    "DEFVAR": ["var", ],
+    "CALL": ["label", ],
+    "RETURN": [],
+    "PUSHS": ["symb",],
+    "POPS": ["var", ],
+    "ADD": ["var", "symb", "symb", ],
+    "SUB": ["var", "symb", "symb", ],
+    "MUL": ["var", "symb", "symb", ],
+    "IDIV": ["var", "symb", "symb", ],
+    "LT": ["var", "symb", "symb", ],
+    "GT": ["var", "symb", "symb", ],
+    "EQ": ["var", "symb", "symb", ],
+    "AND": ["var", "symb", "symb", ],
+    "OR": ["var", "symb", "symb", ],
+    "NOT": ["var", "symb", ],
+    "INT2CHAR": ["var", "symb", ],
+    "STRI2INT": ["var", "symb", "symb", ],
+    "READ": ["var", "type", ],
+    "WRITE": ["symb", ],
+    "CONCAT": ["var", "symb", "symb", ],
+    "STRLEN": ["var", "symb", ],
+    "GETCHAR": ["var", "symb", "symb", ],
+    "SETCHAR": ["var", "symb", "symb", ],
+    "TYPE": ["var", "symb", ],
+    "LABEL": ["label", ],
+    "JUMP": ["label", ],
+    "JUMPIFEQ": ["label", "symb", "symb", ],
+    "JUMPIFNEQ": ["label", "symb", "symb", ],
+    "EXIT": ["symb", ],
+    "DPRINT": ["symb", ],
+    "BREAK": [],
+}
+
 xstr = lambda s: '' if s is None else str(s)
-# TODO checks
+
 
 def MOVE():
     if 'GF' in val1 and val1 in GF:
@@ -102,7 +152,7 @@ def INT2CHAR():
     print('works')
 
 
-def STR2INT():
+def STRI2INT():
     print('works')
 
 
@@ -111,46 +161,26 @@ def READ():
 
 
 def WRITE():
-    ramec = {
-            'GF': GF,
-            'LF': LF,
-            'TF': TF,
-        }
-
-    corect_frame = [val for key,val in ramec.items() if val1.startswith(key)]
+    corect_frame = [val for key, val in ramec.items() if val1.startswith(key)]
     if len(corect_frame) == 0:
-        print(re.sub(r'^[^@]*@',r'',val1))
+        print(re.sub(r'^[^@]*@', r'', val1))
     else:
         print(str(corect_frame[0][val1]))
 
 
-
-
 def CONCAT():
-    ramec = {
-                'GF': GF,
-                'LF': LF,
-                'TF': TF,
-            }
-    corect_frame = [val for key,val in ramec.items() if val2.startswith(key)]
+    corect_frame = [val for key, val in ramec.items() if val2.startswith(key)]
     if len(corect_frame) == 0:
-        st = re.sub(r'^[^@]*@',r'',val2)
+        st = re.sub(r'^[^@]*@', r'', val2)
     else:
         st = xstr(corect_frame[0][val2])
-    corect_frame = [val for key,val in ramec.items() if val3.startswith(key)]
+    corect_frame = [val for key, val in ramec.items() if val3.startswith(key)]
     if len(corect_frame) == 0:
-          st += re.sub(r'^[^@]*@',r'',val3)
+        st += re.sub(r'^[^@]*@', r'', val3)
     else:
-          st += xstr(corect_frame[0][val3])
+        st += xstr(corect_frame[0][val3])
 
-    [val for key,val in ramec.items() if val1.startswith(key)][0][val1] = st
-
-
-
-
-
-
-
+    [val for key, val in ramec.items() if val1.startswith(key)][0][val1] = st
 
 
 def STRLEN():
@@ -180,13 +210,8 @@ def JUMP():
 
 def JUMPIFEQ():
     global i
-    ramec = {
-        'GF': GF,
-        'LF': LF,
-        'TF': TF,
-    }
 
-    corect_frame = [val for key,val in ramec.items() if key in val2][0]
+    corect_frame = [val for key, val in ramec.items() if key in val2][0]
     if corect_frame[val2] == val3:
         i = labels[val1]
 
@@ -206,13 +231,6 @@ def DPRINT():
 def BREAK():
     print('works')
 
-
-LF = {}
-GF = {}
-TF = {}
-
-f_stack = []
-f_stack.append(LF)
 
 switch = {
     "MOVE": MOVE,
@@ -236,7 +254,7 @@ switch = {
     "OR": OR,
     "NOT": NOT,
     "INT2CHAR": INT2CHAR,
-    "STR2INT": STR2INT,
+    "STR2INT": STRI2INT,
     "READ": READ,
     "WRITE": WRITE,
     "CONCAT": CONCAT,
@@ -258,65 +276,84 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='IPP project'
                                                  'note: at least 1 parametr must be specified ( -s or -i) '
                                                  'interprets IPPcode21 from xml file')
     parser.add_argument('-s', '--source', help='source file with xml')
     parser.add_argument('-i', '--input', help='file with input for given program\n')
     args = parser.parse_args()
-    if (args.source is None and args.input is None):
+    if args.source is None and args.input is None:
         eprint("optional argument needed")
-        exit(10);
-    if (args.source is not None):
+        exit(10)
+    if args.source is not None:
         source = open(args.source, "r")
     else:
         source = sys.stdin
-    if (args.input is not None):
+    if args.input is not None:
         input = open(args.input, "r")
     else:
         input = sys.stdin
 
-    xml = parseString(source.read());
-    instructions = xml.getElementsByTagName("instruction")
+    # load xml
+    try:
+        root = ET.fromstring(source.read())
+    except:
+        eprint("XML declaration not well-formed")
+        exit(31)
+
+    order_array = []
+    # check xml structure
+    if root.tag != 'program' or root.get('language') != 'IPPcode21' or len(root.attrib) != 1:
+        exit(32)
+    # check ins-xml
+    for inst in root:
+        if inst.tag != 'instruction' or inst.get('order') is None or switch.get(inst.get('opcode')) is None or len(
+                inst.attrib) != 2:
+            exit(32)
+        order_array.append(int(inst.get('order')))
+        # check args-xml need to sort first
+        inst[:] = sorted(inst, key=lambda child: child.tag)
+        arg_list = arg_types.get(inst.get('opcode'))
+        if len(inst) != len(arg_list):
+            exit(32)
+        for arg in range(len(arg_list)):
+            argx = inst[arg]
+            if argx.tag != 'arg' + str(arg+1) or argx.get('type') is None or len(argx.attrib) != 1:
+                exit(32)
+
+    if len(order_array) != len(set(order_array)) or any(i < 0 for i in order_array):
+        exit(32)
+
+
+    # sort by instruction order
+    root[:] = sorted(root, key=lambda child: int(child.get('order')))
 
     # prepare labels
     labels = {}
-    for instr in instructions:
-        if instr.attributes['opcode'].value == "LABEL":
-            labels[instr.getElementsByTagName('arg1')[0].firstChild.data] = instructions.index(instr)
+    for instruction in [i for i in root if i.get('opcode') == 'LABEL']:
+        labels[instruction[0].text] = list(root).index(instruction)
 
-    # TODO: sort by instruction order
-
-    i = 0  # int(instructions[0].attributes['order'].value)
-    ma = len(instructions)
+    i = 0
+    ma = len(root)
 
     while i < ma:
-        ac_in = instructions[i]
-        ac_opc = ac_in.attributes['opcode'].value
+        ac_in = root[i]
+        ac_opc = ac_in.get('opcode')
 
         type1 = None
         val1 = None
-        try:
-            var1 = ac_in.getElementsByTagName('arg1')[0]
-            type1 = var1.attributes['type'].value
-            val1 = var1.firstChild.data
-        except:
-            pass
         type2 = None
         val2 = None
-        try:
-            var2 = ac_in.getElementsByTagName('arg2')[0]
-            type2 = var2.attributes['type'].value
-            val2 = var2.firstChild.data
-        except:
-            pass
         type3 = None
         val3 = None
         try:
-            var3 = ac_in.getElementsByTagName('arg3')[0]
-            type3 = var3.attributes['type'].value
-            val3 = var3.firstChild.data
+            type1 = ac_in.find('arg1').get('type')
+            val1 = ac_in.find('arg1').text
+            type2 = ac_in.find('arg2').get('type')
+            val2 = ac_in.find('arg2').text
+            type3 = ac_in.find('arg3').get('type')
+            val3 = ac_in.find('arg3').text
         except:
             pass
 
@@ -324,5 +361,4 @@ if (__name__ == "__main__"):
             eprint('wrong opcode')
             exit(10)
         switch[ac_opc]()
-        #print('\n' + str(i) + '\n')
         i += 1
