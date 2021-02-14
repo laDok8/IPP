@@ -3,12 +3,11 @@ import xml.etree.ElementTree as ET
 import argparse
 import sys
 
-LF = {}
+LF = None
 GF = {}
-TF = {}
+TF = None
 
-f_stack = []
-f_stack.append(LF)
+f_stack = [None]
 
 ramec = {
     'GF': GF,
@@ -23,7 +22,7 @@ arg_types = {
     "DEFVAR": ["var", ],
     "CALL": ["label", ],
     "RETURN": [],
-    "PUSHS": ["symb",],
+    "PUSHS": ["symb", ],
     "POPS": ["var", ],
     "ADD": ["var", "symb", "symb", ],
     "SUB": ["var", "symb", "symb", ],
@@ -55,181 +54,386 @@ arg_types = {
 
 xstr = lambda s: '' if s is None else str(s)
 
+regex = {
+    'var': '^(?:LF|GF|TF)@[a-zA-Z_\-$&%*!?][\w\-$&%*!?]*$',
+    'int': '^[+-]?[\d]+$',
+    'bool': '^true|false$',
+    'string': '^.*$',
+    'nil': '^nil$',
+    'label': '^[a-zA-Z_\-$&%*!?][\w\-$&%*!?]*$',
+    'type': '^int|bool|string|nil$',
+}
+
+
+def nil(var):
+    return None
+
+
+def var(var):
+    return var
+
+
+cast = {
+    'int': int,
+    'bool': bool,
+    'string': str,
+    'nil': nil,
+    'var': var,
+}
+
+
+# returns real type - no var
+def get_type(type, val):
+    if type == 'var':
+        m_frame = ramec[val[:2]]
+        if m_frame is None:
+            eprint("frame missing")
+            exit(54)
+        if val not in m_frame:
+            eprint("undefined variable")
+            exit(52)
+        if isinstance(m_frame[val], str):
+            return 'string'
+        elif isinstance(m_frame[val], int):
+            return 'int'
+        elif isinstance(m_frame[val], bool):
+            return 'bool'
+        else:
+            return 'nil'
+    else:
+        return type
+
+
+def get_val(type, val):
+    if type == 'var':
+        m_frame = ramec[val[:2]]
+        if m_frame is None:
+            eprint("frame missing")
+            exit(54)
+        if val not in m_frame:
+            eprint("undefined variable")
+            exit(52)
+        return m_frame[val]
+    else:
+        return cast[type](val)
+
+
+def set_val(val, res):
+    m_frame = ramec[val[:2]]
+    if m_frame is None:
+        eprint("frame missing")
+        exit(54)
+    if val1 not in m_frame:
+        eprint("undefined variable")
+        exit(52)
+    m_frame[val] = res
+
 
 def MOVE():
-    if 'GF' in val1 and val1 in GF:
-        GF[val1] = val2
-    elif 'TF' in val1 and val1 in TF:
-        TF[val1] = val2
-    elif 'LF' in val1 and val1 in LF:
-        LF[val1] = val2
-    else:
-        eprint("incorect frame/ already declared")
-        exit(1)
+    set_val(val1, get_val(type2, val2))
 
 
 def CREATEFRAME():
-    print('works')
+    global TF
+    TF = {}
 
 
 def DEFVAR():
-    if 'GF' in val1 and val1 not in GF:
-        GF[val1] = None
-    elif 'TF' in val1 and val1 not in TF:
-        TF[val1] = None
-    elif 'LF' in val1 and val1 not in LF:
-        LF[val1] = None
-    else:
-        eprint("incorect frame/ already declared")
-        exit(1)
+    m_frame = ramec[val1[:2]]
+    if m_frame is None:
+        eprint("frame missing")
+        exit(54)
+
+    if val1 in m_frame:
+        eprint("redefinition of variable")
+        exit(52)
+    # instrukce
+    m_frame[val1] = None
 
 
 def PUSHFRAME():
-    print('works')
+    global LF, TF
+    if TF is None:
+        eprint('undefined TF')
+        exit(55)
+    f_stack.push(LF)
+    LF = TF
+    TF = None
 
 
 def POPFRAME():
-    print('works')
+    global LF, TF
+    if LF is None:
+        eprint('undefined LF')
+        exit(55)
+    TF = LF
+    LF = f_stack.pop()
+
+
+store_calls = [None]
 
 
 def CALL():
-    print('works')
+    global i
+    store_calls.append(i + 1)
+    # has same call siganture
+    JUMP();
 
 
 def RETURN():
-    print('works')
+    global i
+    tmp = store_calls.pop();
+    if tmp is None:
+        eprint('call stack empty')
+        exit(56)
+    i = tmp
+
+
+val_stack = [None]
 
 
 def PUSHS():
-    print('works')
+    val_stack.append(get_val(type1, val1))
 
 
 def POPS():
-    print('works')
+    tmp = val_stack.pop()
+    if tmp is None:
+        eprint('var stack empty')
+        exit(56)
+    set_val(val1, tmp)
 
 
 def ADD():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'int':
+        eprint('type mismatch - ADD')
+        exit(53)
+    set_val(val1, get_val(type2, val2) + get_val(type3, val3))
 
 
 def SUB():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'int':
+        eprint('type mismatch - SUB')
+        exit(53)
+    set_val(val1, get_val(type2, val2) - get_val(type3, val3))
 
 
 def MUL():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'int':
+        eprint('type mismatch - MUL')
+        exit(53)
+    set_val(val1, get_val(type2, val2) * get_val(type3, val3))
 
 
 def IDIV():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'int':
+        eprint('type mismatch - IDIV')
+        exit(53)
+    if get_val(type3, val3) == 0:
+        eprint('division by zero')
+        exit(57)
+    set_val(val1, get_val(type2, val2) // get_val(type3, val3))
 
 
 def LT():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string']:
+        eprint('type mismatch')
+        exit(53)
+    set_val(val1, get_val(type2, val2) < get_val(type3, val3))
 
 
 def GT():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string']:
+        eprint('type mismatch')
+        exit(53)
+    set_val(val1, get_val(type2, val2) > get_val(type3, val3))
 
 
 def EQ():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string']:
+        eprint('type mismatch')
+        exit(53)
+    set_val(val1, get_val(type2, val2) == get_val(type3, val3))
 
 
 def AND():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'bool':
+        eprint('type mismatch')
+        exit(53)
+    set_val(val1, get_val(type2, val2) and get_val(type3, val3))
 
 
 def OR():
-    print('works')
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'bool':
+        eprint('type mismatch')
+        exit(53)
+    set_val(val1, get_val(type2, val2) or get_val(type3, val3))
 
 
 def NOT():
-    print('works')
+    if get_type(type2, val2) != 'bool':
+        eprint('type mismatch')
+        exit(53)
+    set_val(val1, not get_val(type2, val2))
 
 
 def INT2CHAR():
-    print('works')
+    if get_type(type2, val2) != 'int':
+        eprint('type mismatch')
+        exit(53)
+    val = get_val(type2, val2)
+    try:
+        val = chr(val)
+    except:
+        eprint('int2char error')
+        exit(58)
+    set_val(val1, val)
 
 
 def STRI2INT():
-    print('works')
+    if get_type(type2, val2) != 'string' or get_type(type3, val3) != 'int':
+        eprint('type mismatch')
+        exit(53)
+    stri = get_val(type2, val2)
+    index = get_val(type3, val3)
+    if index < 0 or index > len(stri):
+        eprint('stri2int error')
+        exit(58)
+
+    try:
+        stri = chr(stri[index])
+    except:
+        eprint('stri2int error')
+        exit(58)
+    set_val(val1, stri)
 
 
 def READ():
-    print('works')
+    if get_type(val3,type3) != 'type' or get_val(type3,val3) not in ['int','string','bool']:
+        eprint('type mismatch')
+        exit(53)
+    typ = get_val(type3,val3)
+    vstup = input()
+    if typ == 'bool':
+        if 'true' in vstup.lower():
+            set_val(val1,True)
+        else:
+            set_val(val1,False)
+    elif typ == 'int' and re.match('^[+-]?[\d]+$',vstup):
+        set_val(val1,int(vstup))
+    elif typ == 'string':
+        set_val(val1,vstup)
+    else:
+        set_val(val1,None)
 
 
 def WRITE():
-    corect_frame = [val for key, val in ramec.items() if val1.startswith(key)]
-    if len(corect_frame) == 0:
-        print(re.sub(r'^[^@]*@', r'', val1))
-    else:
-        print(str(corect_frame[0][val1]))
+    stri = get_val(type1, val1)
+    print(xstr(stri), end='')
 
 
 def CONCAT():
-    corect_frame = [val for key, val in ramec.items() if val2.startswith(key)]
-    if len(corect_frame) == 0:
-        st = re.sub(r'^[^@]*@', r'', val2)
-    else:
-        st = xstr(corect_frame[0][val2])
-    corect_frame = [val for key, val in ramec.items() if val3.startswith(key)]
-    if len(corect_frame) == 0:
-        st += re.sub(r'^[^@]*@', r'', val3)
-    else:
-        st += xstr(corect_frame[0][val3])
-
-    [val for key, val in ramec.items() if val1.startswith(key)][0][val1] = st
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'string':
+        eprint('type mismatch - CONCAT')
+        exit(53)
+    set_val(val1, get_val(type2, val2) + get_val(type3, val3))
 
 
 def STRLEN():
-    print('works')
+    if get_type(type2, val2) != 'string':
+        eprint('type mismatch - STRLEN')
+        exit(53)
+    len = xstr(get_val(type2, val2))
+    set_val(val1, len)
 
 
 def GETCHAR():
-    print('works')
+    if get_type(type2, val2) != 'string' or get_type(type3, val3) != 'int':
+        eprint('type mismatch')
+        exit(53)
+    stri = get_val(type2, val2)
+    index = get_val(type3, val3)
+    if index < 0 or index > len(stri):
+        eprint('getchar error')
+        exit(58)
+    set_val(val1, stri[index])
 
 
 def SETCHAR():
-    print('works')
+    if get_type(type2, val2) != 'int' or get_type(type3, val3) != 'string':
+        eprint('type mismatch')
+        exit(53)
+    stri = get_val(type1, val1)
+    index = get_val(type3, val3)
+    if index < 0 or index > len(stri) or len(get_val(type3,val3) < 1):
+        eprint('setchar error')
+        exit(58)
+    stri[index] = get_val(type3,val3)[0]
+    set_val(val1, stri)
 
 
 def TYPE():
-    print('works')
+    set_val(val1, get_type(type2,val2))
 
 
+# nothing needed
 def LABEL():
     pass
 
 
 def JUMP():
     global i
-    i = labels[val1]
+    temp = labels.get(val1)
+    if temp is None:
+        eprint('undefined label')
+        exit(52)
+    # skok
+    i = temp
 
 
 def JUMPIFEQ():
     global i
+    temp = labels.get(val1)
+    if temp is None:
+        eprint('undefined label')
+        exit(52)
 
-    corect_frame = [val for key, val in ramec.items() if key in val2][0]
-    if corect_frame[val2] == val3:
-        i = labels[val1]
+    if get_type(type2, val2) != get_type(type3, val3):
+        eprint('type mismatch - JUMPIFEQ')
+        exit(53)
+
+    # skok
+    if get_val(type2, val2) == get_val(type3, val3):
+        i = temp
 
 
 def JUMPIFNEQ():
-    print('works')
+    global i
+    temp = labels.get(val1)
+    if temp is None:
+        eprint('undefined label')
+        exit(52)
+
+    if get_type(type2, val2) != get_type(type3, val3):
+        eprint('type mismatch - JUMPIFEQ')
+        exit(53)
+
+    # skok
+    if get_val(type2, val2) != get_val(type3, val3):
+        i = temp
 
 
 def EXIT():
-    print('works')
+    exit(0)
 
 
 def DPRINT():
-    print('works')
+    stri = get_val(type1, val1)
+    eprint(xstr(stri))
 
 
 def BREAK():
-    print('works')
+    eprint('state of interpret:')
 
 
 switch = {
@@ -276,6 +480,20 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def argcheck(xml, type, value):
+    translate = {
+        'var': ['var'],
+        'symb': ['int', 'bool', 'string', 'nil', 'var'],
+        'label': ['label'],
+        'type': ['type'],
+    }
+    # unknown type in xml
+    if type not in translate.get(xml, {}):
+        return False
+
+    return re.match(regex.get(type), value) != None
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='IPP project'
                                                  'note: at least 1 parametr must be specified ( -s or -i) '
@@ -308,7 +526,7 @@ if __name__ == "__main__":
         exit(32)
     # check ins-xml
     for inst in root:
-        if inst.tag != 'instruction' or inst.get('order') is None or switch.get(inst.get('opcode')) is None or len(
+        if inst.tag != 'instruction' or inst.get('order') == None or switch.get(inst.get('opcode')) == None or len(
                 inst.attrib) != 2:
             exit(32)
         order_array.append(int(inst.get('order')))
@@ -319,12 +537,25 @@ if __name__ == "__main__":
             exit(32)
         for arg in range(len(arg_list)):
             argx = inst[arg]
-            if argx.tag != 'arg' + str(arg+1) or argx.get('type') is None or len(argx.attrib) != 1:
+            if (argx.tag != 'arg' + str(arg + 1)) or argx.get('type') is None or len(argx.attrib) != 1:
+                exit(32)
+            # transform escaped string chars
+            if argx.get('type') == 'string':
+                reg = re.compile('\\\\(\d{3})')
+
+
+                def replace(match):
+                    return chr(int(match.group(1)))
+
+
+                argx.text = reg.sub(replace, xstr(argx.text))
+
+            # lexical & syntax check
+            if not argcheck(arg_list[arg], argx.get('type'), xstr(argx.text)):
                 exit(32)
 
     if len(order_array) != len(set(order_array)) or any(i < 0 for i in order_array):
         exit(32)
-
 
     # sort by instruction order
     root[:] = sorted(root, key=lambda child: int(child.get('order')))
@@ -332,6 +563,9 @@ if __name__ == "__main__":
     # prepare labels
     labels = {}
     for instruction in [i for i in root if i.get('opcode') == 'LABEL']:
+        if instruction[0].text in labels:
+            eprint("redefined label")
+            exit(52)
         labels[instruction[0].text] = list(root).index(instruction)
 
     i = 0
