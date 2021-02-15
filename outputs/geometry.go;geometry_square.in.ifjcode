@@ -1,0 +1,614 @@
+.IPPcode21
+JUMP main-0
+LABEL inputs-0 
+PUSHFRAME 
+DEFVAR LF@%retval0 
+DEFVAR LF@%retval1 
+MOVE LF@%retval1 int@0 
+READ LF@%retval0 string 
+DEFVAR LF@%inputs_var 
+TYPE LF@%inputs_var LF@%retval0 
+JUMPIFEQ %inputs_e LF@%inputs_var string@string 
+MOVE LF@%retval0 string@ 
+MOVE LF@%retval1 int@1 
+LABEL %inputs_e 
+POPFRAME 
+RETURN 
+LABEL inputi-0 
+PUSHFRAME 
+DEFVAR LF@%retval0 
+DEFVAR LF@%retval1 
+MOVE LF@%retval1 int@0 
+READ LF@%retval0 int 
+DEFVAR LF@%inputi_var 
+TYPE LF@%inputi_var LF@%retval0 
+JUMPIFEQ %inputi_e LF@%inputi_var string@int 
+MOVE LF@%retval0 int@0 
+MOVE LF@%retval1 int@1 
+LABEL %inputi_e 
+POPFRAME 
+RETURN 
+LABEL inputf-0 
+PUSHFRAME 
+DEFVAR LF@%retval0 
+DEFVAR LF@%retval1 
+MOVE LF@%retval1 int@0 
+READ LF@%retval0 float 
+DEFVAR LF@%inputf_var 
+TYPE LF@%inputf_var LF@%retval0 
+JUMPIFEQ %inputf_e LF@%inputf_var string@float 
+MOVE LF@%retval0 float@0x0p+0 
+MOVE LF@%retval1 int@1 
+LABEL %inputf_e 
+POPFRAME 
+RETURN 
+LABEL len-0 
+DEFVAR TF@%retval0 
+STRLEN TF@%retval0 TF@%0 
+RETURN 
+LABEL substr-0 
+PUSHFRAME 
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 string@
+DEFVAR LF@%retval1 
+DEFVAR LF@i 
+MOVE LF@i LF@%1 
+DEFVAR LF@n 
+MOVE LF@n LF@%2 
+MOVE LF@%retval1 int@0 
+DEFVAR LF@%len 
+STRLEN LF@%len LF@%0 
+DEFVAR LF@pom 
+LT LF@pom LF@n int@0 
+JUMPIFEQ %substr_err LF@pom bool@true 
+EQ LF@pom LF@n int@0 
+JUMPIFEQ %substr_end LF@pom bool@true 
+LT LF@pom LF@i int@0 
+JUMPIFEQ %substr_err LF@pom bool@true 
+GT LF@pom LF@i LF@%len 
+JUMPIFEQ %substr_err LF@pom bool@true 
+EQ LF@pom LF@i LF@%len 
+JUMPIFEQ %substr_err LF@pom bool@true 
+DEFVAR LF@lim 
+ADD LF@lim LF@i LF@n 
+LT LF@pom LF@lim LF@%len 
+JUMPIFEQ %substr_skip LF@pom bool@true 
+MOVE LF@lim LF@%len 
+LABEL %substr_skip 
+DEFVAR LF@%c 
+LABEL %substr_while 
+GETCHAR LF@%c LF@%0 LF@i 
+CONCAT LF@%retval0 LF@%retval0 LF@%c 
+ADD LF@i LF@i int@1 
+LT LF@pom LF@i LF@lim 
+JUMPIFEQ %substr_while LF@pom bool@true 
+LABEL %substr_end 
+POPFRAME 
+RETURN 
+LABEL %substr_err 
+MOVE LF@%retval1 int@1 
+POPFRAME 
+RETURN 
+LABEL ord-0 
+PUSHFRAME 
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 int@0 
+DEFVAR LF@%retval1 
+MOVE LF@%retval1 int@0 
+DEFVAR LF@%i 
+MOVE LF@%i LF@%1 
+DEFVAR LF@%len 
+STRLEN LF@%len LF@%0 
+DEFVAR LF@%pom 
+LT LF@%pom LF@%i int@0 
+JUMPIFEQ %ord_err LF@%pom bool@true 
+SUB LF@%len LF@%len int@1 
+GT LF@%pom LF@%i LF@%len 
+JUMPIFEQ %ord_err LF@%pom bool@true 
+STRI2INT LF@%retval0 LF@%0 LF@%i 
+POPFRAME 
+RETURN 
+LABEL %ord_err 
+MOVE LF@%retval1 int@1 
+POPFRAME 
+RETURN 
+LABEL chr-0 
+PUSHFRAME 
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 int@0 
+DEFVAR LF@%retval1 
+MOVE LF@%retval1 int@0 
+DEFVAR LF@pom 
+LT LF@pom LF@%0 int@0 
+JUMPIFEQ %chr_err LF@pom bool@true 
+GT LF@pom LF@%0 int@255 
+JUMPIFEQ %chr_err LF@pom bool@true 
+INT2CHAR LF@%retval0 LF@%0 
+POPFRAME 
+RETURN 
+LABEL %chr_err 
+MOVE LF@%retval1 int@1 
+POPFRAME 
+RETURN 
+LABEL print-0 
+PUSHFRAME 
+DEFVAR LF@params 
+DEFVAR LF@help 
+POPS LF@params 
+LABEL %print_start 
+JUMPIFEQ %print_end LF@params int@0 
+SUB LF@params LF@params int@1 
+POPS LF@help 
+WRITE LF@help 
+JUMP %print_start 
+LABEL %print_end 
+POPFRAME 
+RETURN 
+LABEL int2float-0 
+DEFVAR TF@%retval0 
+INT2FLOAT TF@%retval0 TF@%0 
+RETURN 
+LABEL float2int-0 
+DEFVAR TF@%retval0 
+FLOAT2INT TF@%retval0 TF@%0 
+RETURN 
+LABEL PrintResult-0
+PUSHFRAME
+DEFVAR LF@o-1 
+MOVE LF@o-1  LF@%0
+DEFVAR LF@s-1 
+MOVE LF@s-1  LF@%1
+CREATEFRAME
+PUSHS string@\010
+PUSHS LF@s-1
+PUSHS string@\010s\032=\032
+PUSHS LF@o-1
+PUSHS string@o\032=\032
+PUSHS int@5
+CALL print-0
+POPFRAME
+RETURN
+LABEL ProcessSquare-0
+PUSHFRAME
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 nil@nil
+CREATEFRAME
+PUSHS string@a\032=\032
+PUSHS int@1
+CALL print-0
+DEFVAR LF@a-2 
+MOVE LF@a-2 float@0x0p+0
+DEFVAR LF@err-2 
+MOVE LF@err-2 int@0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@a-2 TF@%retval0
+MOVE LF@err-2 TF@%retval1
+DEFVAR LF@%var0
+EQ LF@%var0 LF@err-2 int@0
+NOT LF@%var0 LF@%var0 
+JUMPIFNEQ label0 LF@%var0 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label1
+
+LABEL label0
+DEFVAR LF@o-4 
+MOVE LF@o-4 float@0x0p+0
+DEFVAR LF@s-4 
+MOVE LF@s-4 float@0x0p+0
+DEFVAR LF@%flovar1
+MUL LF@%flovar1 float@0x1p+2 LF@a-2
+MOVE LF@o-4 LF@%flovar1
+DEFVAR LF@%flovar2
+MUL LF@%flovar2 LF@a-2 LF@a-2
+MOVE LF@s-4 LF@%flovar2
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@o-4
+DEFVAR TF@%1
+MOVE TF@%1 LF@s-4
+CALL PrintResult-0
+MOVE LF@%retval0 int@0 
+POPFRAME
+RETURN
+LABEL label1
+POPFRAME
+RETURN
+LABEL ProcessRectangle-0
+PUSHFRAME
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 nil@nil
+CREATEFRAME
+PUSHS string@a\032=\032
+PUSHS int@1
+CALL print-0
+DEFVAR LF@a-5 
+MOVE LF@a-5 float@0x0p+0
+DEFVAR LF@b-5 
+MOVE LF@b-5 float@0x0p+0
+DEFVAR LF@two-5 
+MOVE LF@two-5 float@0x0p+0
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 int@2
+CALL int2float-0
+MOVE LF@two-5 TF@%retval0
+DEFVAR LF@err-5 
+MOVE LF@err-5 int@0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@a-5 TF@%retval0
+MOVE LF@err-5 TF@%retval1
+DEFVAR LF@%var3
+EQ LF@%var3 LF@err-5 int@0
+NOT LF@%var3 LF@%var3 
+JUMPIFNEQ label2 LF@%var3 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label3
+
+LABEL label2
+CREATEFRAME
+PUSHS string@b\032=\032
+PUSHS int@1
+CALL print-0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@b-5 TF@%retval0
+MOVE LF@err-5 TF@%retval1
+DEFVAR LF@%var4
+EQ LF@%var4 LF@err-5 int@0
+NOT LF@%var4 LF@%var4 
+JUMPIFNEQ label4 LF@%var4 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label5
+
+LABEL label4
+DEFVAR LF@o-9 
+MOVE LF@o-9 float@0x0p+0
+DEFVAR LF@s-9 
+MOVE LF@s-9 float@0x0p+0
+DEFVAR LF@%flovar5
+MUL LF@%flovar5 LF@two-5 LF@a-5
+DEFVAR LF@%flovar6
+MUL LF@%flovar6 LF@two-5 LF@b-5
+DEFVAR LF@%flovar7
+ADD LF@%flovar7 LF@%flovar5 LF@%flovar6
+MOVE LF@o-9 LF@%flovar7
+DEFVAR LF@%flovar8
+MUL LF@%flovar8 LF@a-5 LF@b-5
+MOVE LF@s-9 LF@%flovar8
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@o-9
+DEFVAR TF@%1
+MOVE TF@%1 LF@s-9
+CALL PrintResult-0
+MOVE LF@%retval0 int@0 
+POPFRAME
+RETURN
+LABEL label5
+LABEL label3
+POPFRAME
+RETURN
+LABEL ProcessCircle-0
+PUSHFRAME
+DEFVAR LF@PI-10 
+MOVE LF@PI-10  LF@%0
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 nil@nil
+DEFVAR LF@err-10 
+MOVE LF@err-10 int@0
+DEFVAR LF@r-10 
+MOVE LF@r-10 float@0x0p+0
+DEFVAR LF@o-10 
+MOVE LF@o-10 float@0x0p+0
+DEFVAR LF@s-10 
+MOVE LF@s-10 float@0x0p+0
+CREATEFRAME
+PUSHS string@r\032=\032
+PUSHS int@1
+CALL print-0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@r-10 TF@%retval0
+MOVE LF@err-10 TF@%retval1
+DEFVAR LF@%var9
+EQ LF@%var9 LF@err-10 int@0
+NOT LF@%var9 LF@%var9 
+JUMPIFNEQ label6 LF@%var9 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label7
+
+LABEL label6
+DEFVAR LF@%flovar10
+MUL LF@%flovar10 float@0x1p+1 LF@PI-10
+DEFVAR LF@%flovar11
+MUL LF@%flovar11 LF@%flovar10 LF@r-10
+MOVE LF@o-10 LF@%flovar11
+DEFVAR LF@%flovar12
+MUL LF@%flovar12 LF@PI-10 LF@r-10
+DEFVAR LF@%flovar13
+MUL LF@%flovar13 LF@%flovar12 LF@r-10
+MOVE LF@s-10 LF@%flovar13
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@o-10
+DEFVAR TF@%1
+MOVE TF@%1 LF@s-10
+CALL PrintResult-0
+LABEL label7
+MOVE LF@%retval0 int@0 
+POPFRAME
+RETURN
+POPFRAME
+RETURN
+LABEL ProcessTriangle-0
+PUSHFRAME
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 nil@nil
+DEFVAR LF@a-13 
+MOVE LF@a-13 float@0x0p+0
+DEFVAR LF@b-13 
+MOVE LF@b-13 float@0x0p+0
+DEFVAR LF@c-13 
+MOVE LF@c-13 float@0x0p+0
+DEFVAR LF@va-13 
+MOVE LF@va-13 float@0x0p+0
+DEFVAR LF@err-13 
+MOVE LF@err-13 int@0
+CREATEFRAME
+PUSHS string@a\032=\032
+PUSHS int@1
+CALL print-0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@a-13 TF@%retval0
+MOVE LF@err-13 TF@%retval1
+DEFVAR LF@%var14
+EQ LF@%var14 LF@err-13 int@1
+JUMPIFNEQ label8 LF@%var14 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label9
+
+LABEL label8
+LABEL label9
+CREATEFRAME
+PUSHS string@b\032=\032
+PUSHS int@1
+CALL print-0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@b-13 TF@%retval0
+MOVE LF@err-13 TF@%retval1
+DEFVAR LF@%var15
+EQ LF@%var15 LF@err-13 int@1
+JUMPIFNEQ label10 LF@%var15 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label11
+
+LABEL label10
+LABEL label11
+CREATEFRAME
+PUSHS string@c\032=\032
+PUSHS int@1
+CALL print-0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@c-13 TF@%retval0
+MOVE LF@err-13 TF@%retval1
+DEFVAR LF@%var16
+EQ LF@%var16 LF@err-13 int@1
+JUMPIFNEQ label12 LF@%var16 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label13
+
+LABEL label12
+LABEL label13
+CREATEFRAME
+PUSHS string@va\032=\032
+PUSHS int@1
+CALL print-0
+CREATEFRAME
+CALL inputf-0
+MOVE LF@va-13 TF@%retval0
+MOVE LF@err-13 TF@%retval1
+DEFVAR LF@%var17
+EQ LF@%var17 LF@err-13 int@1
+JUMPIFNEQ label14 LF@%var17 bool@true
+MOVE LF@%retval0 int@1 
+POPFRAME
+RETURN
+JUMP label15
+
+LABEL label14
+LABEL label15
+DEFVAR LF@o-13 
+MOVE LF@o-13 float@0x0p+0
+DEFVAR LF@s-13 
+MOVE LF@s-13 float@0x0p+0
+DEFVAR LF@two-13 
+MOVE LF@two-13 float@0x0p+0
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 int@2
+CALL int2float-0
+MOVE LF@two-13 TF@%retval0
+DEFVAR LF@%flovar18
+ADD LF@%flovar18 LF@a-13 LF@b-13
+DEFVAR LF@%flovar19
+ADD LF@%flovar19 LF@%flovar18 LF@c-13
+MOVE LF@o-13 LF@%flovar19
+DEFVAR LF@%flovar20
+MUL LF@%flovar20 LF@a-13 LF@va-13
+DEFVAR LF@%flovar21
+JUMPIFNEQ label16 LF@two-13 float@0x0p+0
+EXIT int@9
+LABEL label16
+DIV LF@%flovar21 LF@%flovar20 LF@two-13
+MOVE LF@s-13 LF@%flovar21
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@o-13
+DEFVAR TF@%1
+MOVE TF@%1 LF@s-13
+CALL PrintResult-0
+MOVE LF@%retval0 int@0 
+POPFRAME
+RETURN
+POPFRAME
+RETURN
+LABEL ProcessShape-0
+PUSHFRAME
+DEFVAR LF@shape-22 
+MOVE LF@shape-22  LF@%0
+DEFVAR LF@PI-22 
+MOVE LF@PI-22  LF@%1
+DEFVAR LF@%retval0 
+MOVE LF@%retval0 nil@nil
+DEFVAR LF@%retval1 
+MOVE LF@%retval1 nil@nil
+DEFVAR LF@err-22 
+MOVE LF@err-22 int@0
+DEFVAR LF@%var22
+EQ LF@%var22 LF@shape-22 string@square
+JUMPIFNEQ label17 LF@%var22 bool@true
+CREATEFRAME
+CALL ProcessSquare-0
+MOVE LF@err-22 TF@%retval0
+JUMP label18
+
+LABEL label17
+DEFVAR LF@%var23
+EQ LF@%var23 LF@shape-22 string@ractangle
+JUMPIFNEQ label19 LF@%var23 bool@true
+CREATEFRAME
+CALL ProcessRectangle-0
+MOVE LF@err-22 TF@%retval0
+JUMP label20
+
+LABEL label19
+DEFVAR LF@%var24
+EQ LF@%var24 LF@shape-22 string@circle
+JUMPIFNEQ label21 LF@%var24 bool@true
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@PI-22
+CALL ProcessCircle-0
+MOVE LF@err-22 TF@%retval0
+JUMP label22
+
+LABEL label21
+DEFVAR LF@%var25
+EQ LF@%var25 LF@shape-22 string@triangle
+JUMPIFNEQ label23 LF@%var25 bool@true
+CREATEFRAME
+CALL ProcessTriangle-0
+MOVE LF@err-22 TF@%retval0
+JUMP label24
+
+LABEL label23
+DEFVAR LF@%var26
+EQ LF@%var26 LF@shape-22 string@exit
+JUMPIFNEQ label25 LF@%var26 bool@true
+MOVE LF@%retval0 int@0 
+MOVE LF@%retval1 int@1 
+POPFRAME
+RETURN
+JUMP label26
+
+LABEL label25
+MOVE LF@%retval0 int@1 
+MOVE LF@%retval1 int@0 
+POPFRAME
+RETURN
+LABEL label26
+LABEL label24
+LABEL label22
+LABEL label20
+LABEL label18
+MOVE LF@%retval0 LF@err-22 
+MOVE LF@%retval1 int@0 
+POPFRAME
+RETURN
+POPFRAME
+RETURN
+LABEL main-0
+CREATEFRAME
+PUSHFRAME
+DEFVAR LF@PI-33 
+MOVE LF@PI-33 float@0x1.921f9f01b866ep+1
+CREATEFRAME
+PUSHS string@exit\032program\032but\032typing\032"exit"
+PUSHS string@GEOMETRY\032CALCULATIONS\010
+PUSHS int@2
+CALL print-0
+DEFVAR LF@exit-33 
+MOVE LF@exit-33 int@0
+DEFVAR LF@%var27
+DEFVAR LF@shape-35 
+DEFVAR LF@err-35 
+DEFVAR LF@%var28
+DEFVAR LF@%var29
+LABEL label27
+EQ LF@%var27 LF@exit-33 int@0
+JUMPIFEQ label32 LF@%var27 bool@false
+CREATEFRAME
+PUSHS string@Select\032shape\032(square,\032ractangle,\032circle,\032triangle):\032
+PUSHS int@1
+CALL print-0
+MOVE LF@shape-35 string@
+MOVE LF@err-35 int@0
+CREATEFRAME
+CALL inputs-0
+MOVE LF@shape-35 TF@%retval0
+MOVE LF@err-35 TF@%retval1
+EQ LF@%var28 LF@err-35 int@1
+JUMPIFNEQ label33 LF@%var28 bool@true
+CREATEFRAME
+PUSHS string@Invalid\032input.\032Try\032again\010
+PUSHS int@1
+CALL print-0
+JUMP label34
+
+LABEL label33
+CREATEFRAME
+DEFVAR TF@%0
+MOVE TF@%0 LF@shape-35
+DEFVAR TF@%1
+MOVE TF@%1 LF@PI-33
+CALL ProcessShape-0
+MOVE LF@err-35 TF@%retval0
+MOVE LF@exit-33 TF@%retval1
+EQ LF@%var29 LF@err-35 int@1
+JUMPIFNEQ label35 LF@%var29 bool@true
+CREATEFRAME
+PUSHS string@Invalid\032input,\032Try\032again\010
+PUSHS int@1
+CALL print-0
+JUMP label36
+
+LABEL label35
+LABEL label36
+LABEL label34
+JUMP label27
+LABEL label32
+CREATEFRAME
+PUSHS string@PROGRAM\032EXITING\010
+PUSHS int@1
+CALL print-0
+POPFRAME
+EXIT int@0
