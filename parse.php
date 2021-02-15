@@ -36,6 +36,9 @@ $instruction_set =array(
     "EXIT" => array("symb", ),
     "DPRINT" => array("symb", ),
     "BREAK" => array(),
+    "INT2FLOAT" => array("var", 'symb',),
+    "FLOAT2INT" => array("var", "symb", ),
+    "DIV" => array("var", 'symb', 'symb',)
 
 );
 
@@ -144,6 +147,12 @@ $instruction_set =array(
                                     exit(23);
                                 }
                                 break;
+                            case 'float':
+                                if(!preg_match('/^.*$/',$value)){
+                                    fprintf(STDERR,"lexical error - float\n");
+                                    exit(23);
+                                }
+                                break;
                             default:
                                 #symb muze byt promena
                                 $type='var';
@@ -164,7 +173,7 @@ $instruction_set =array(
                         $value = $matches[$arg_count];
                         break;
                     case 'type':
-                        if(!preg_match('/^int|bool|string|nil$/',$matches[$arg_count])){
+                        if(!preg_match('/^int|bool|string|nil|float$/',$matches[$arg_count])){
                             fprintf(STDERR,"lexical error - type\n");
                             exit(23);
                         }
