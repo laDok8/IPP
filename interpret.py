@@ -2,7 +2,6 @@ import re
 import xml.etree.ElementTree as ET
 import argparse
 import sys
-from typing import Dict, List, Any, Union, Callable
 
 f_stack = [None]
 
@@ -18,11 +17,11 @@ regex = {
     'var': '^(?:LF|GF|TF)@[a-zA-Z_\-$&%*!?][\w\-$&%*!?]*$',
     'int': '^[+-]?[\d]+$',
     'bool': '^true|false$',
-    'string': '^.*$',
+    'string': '',
     'nil': '^nil$',
     'label': '^[a-zA-Z_\-$&%*!?][\w\-$&%*!?]*$',
     'type': '^int|bool|string|nil|float$',
-    'float': '^.*$',
+    'float': '',
 }
 
 
@@ -35,7 +34,7 @@ def var(var):
 def bool(var):
     return re.match('(?i)true',var) is not None
 #TODO zjistit chyby
-def float(var):
+def floati(var):
     try:
         tmp = float.fromhex(var)
     except:
@@ -48,7 +47,8 @@ cast = {
     'string': str,
     'nil': nil,
     'var': var,
-    'float': float,
+    'float': floati,
+    'type': str,
 }
 
 
@@ -59,10 +59,10 @@ def get_type(type, val):
         if m_frame is None:
             eprint("frame missing")
             exit(54)
-        if val not in m_frame:
+        if val[3:] not in m_frame:
             eprint("undefined variable")
             exit(52)
-        return m_frame[val]['type']
+        return m_frame[val[3:]]['type']
     else:
         return type
 
@@ -73,10 +73,10 @@ def get_val(type, val):
         if m_frame is None:
             eprint("frame missing")
             exit(54)
-        if val not in m_frame:
+        if val[3:] not in m_frame:
             eprint("undefined variable")
             exit(52)
-        return m_frame[val]['val']
+        return m_frame[val[3:]]['val']
     else:
         return cast[type](val)
 
@@ -86,10 +86,10 @@ def set_val(val, res, res_type):
     if m_frame is None:
         eprint("frame missing")
         exit(54)
-    if val1 not in m_frame:
+    if val[3:] not in m_frame:
         eprint("undefined variable")
         exit(52)
-    m_frame[val] = {'val': res, 'type': res_type}
+    m_frame[val[3:]] = {'val': res, 'type': res_type}
 
 
 def MOVE():
@@ -106,11 +106,11 @@ def DEFVAR():
         eprint("frame missing")
         exit(54)
 
-    if val1 in m_frame:
+    if val1[3:] in m_frame:
         eprint("redefinition of variable")
         exit(52)
     # instrukce
-    m_frame[val1] = {'val': None, 'type': None}
+    m_frame[val1[3:]] = {'val': None, 'type': None}
 
 
 def PUSHFRAME():
@@ -135,14 +135,14 @@ store_calls = [None]
 
 def CALL():
     global i
-    store_calls.append(i + 1)
+    store_calls.append(i)
     # has same call siganture
     JUMP();
 
 
 def RETURN():
     global i
-    tmp = store_calls.pop();
+    tmp = store_calls.pop()
     if tmp is None:
         eprint('call stack empty')
         exit(56)
@@ -165,21 +165,21 @@ def POPS():
 
 
 def ADD():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'int':
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'float']:
         eprint('type mismatch - ADD')
         exit(53)
     set_val(val1, get_val(type2, val2) + get_val(type3, val3), get_type(type3, val3))
 
 
 def SUB():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'int':
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'float']:
         eprint('type mismatch - SUB')
         exit(53)
     set_val(val1, get_val(type2, val2) - get_val(type3, val3), get_type(type3, val3))
 
 
 def MUL():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) != 'int':
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'float']:
         eprint('type mismatch - MUL')
         exit(53)
     set_val(val1, get_val(type2, val2) * get_val(type3, val3), get_type(type3, val3))
@@ -261,7 +261,7 @@ def STRI2INT():
         exit(58)
 
     try:
-        stri = chr(stri[index])
+        stri = ord(stri[index])
     except:
         eprint('stri2int error')
         exit(58)
@@ -269,11 +269,11 @@ def STRI2INT():
 
 
 def READ():
-    if get_type(val3, type3) != 'type' or get_val(type3, val3) not in ['int', 'string', 'bool', 'float']:
+    if type2 != 'type' or get_val(type2, val2) not in ['int', 'string', 'bool', 'float']:
         eprint('type mismatch')
         exit(53)
-    typ = get_val(type3, val3)
-    vstup = input()
+    typ = get_val(type2, val2)
+    vstup = inputs.readline().rstrip('\n')
     if typ == 'bool':
         if 'true' in vstup.lower():
             set_val(val1, True, 'bool')
@@ -284,14 +284,17 @@ def READ():
     elif typ == 'string':
         set_val(val1, vstup, 'string')
     elif typ == 'float':
-        set_val(val1, vstup, 'float')
+        set_val(val1, floati(vstup), 'float')
     else:
         set_val(val1, 'nil', 'nil')
 
 
 def WRITE():
     stri = get_val(type1, val1)
-    print(xstr(stri), end='')
+    if get_type(type1,val1) == 'float':
+        print(float.hex(stri), end='')
+    else:
+        print(xstr(stri), end='')
 
 
 def CONCAT():
@@ -305,8 +308,8 @@ def STRLEN():
     if get_type(type2, val2) != 'string':
         eprint('type mismatch - STRLEN')
         exit(53)
-    len = xstr(get_val(type2, val2))
-    set_val(val1, len, 'int')
+    length = len(xstr(get_val(type2, val2)))
+    set_val(val1, length, 'int')
 
 
 def GETCHAR():
@@ -335,7 +338,7 @@ def SETCHAR():
 
 
 def TYPE():
-    set_val(val1, 'string@'+xstr(get_type(type2, val2)), 'string')
+    set_val(val1, xstr(get_type(type2, val2)), 'string')
 
 
 # nothing needed
@@ -362,7 +365,7 @@ def JUMPIFEQ():
 
     if get_type(type2, val2) != get_type(type3, val3):
         eprint('type mismatch - JUMPIFEQ')
-        exit(53)
+        exit(53)()
 
     # skok
     if get_val(type2, val2) == get_val(type3, val3):
@@ -496,9 +499,9 @@ if __name__ == "__main__":
     else:
         source = sys.stdin
     if args.input is not None:
-        input = open(args.input, "r")
+        inputs = open(args.input, "r")
     else:
-        input = sys.stdin
+        inputs = sys.stdin
 
     # load xml
     try:
