@@ -28,12 +28,15 @@ regex = {
 def nil(var):
     return 'nil'
 
+
 def var(var):
     return var
 
+
 def bool(var):
-    return re.match('(?i)true',var) is not None
-#TODO zjistit chyby
+    return re.match('(?i)true', var) is not None
+
+
 def floati(var):
     try:
         tmp = float.fromhex(var)
@@ -41,14 +44,15 @@ def floati(var):
         exit(-10)
     return tmp
 
+
 cast = {
     'int': int,
     'bool': bool,
-    'string': str,
+    'string': xstr,
     'nil': nil,
     'var': var,
     'float': floati,
-    'type': str,
+    'type': xstr,
 }
 
 
@@ -58,11 +62,15 @@ def get_type(type, val):
         m_frame = ramec.get(val[:2])
         if m_frame is None:
             eprint("frame missing")
-            exit(54)
+            exit(55)
         if val[3:] not in m_frame:
             eprint("undefined variable")
-            exit(52)
-        return m_frame[val[3:]]['type']
+            exit(54)
+        tmp = m_frame[val[3:]]['type']
+        if tmp is None:
+            eprint("undefined value")
+            exit(56)
+        return tmp
     else:
         return type
 
@@ -72,11 +80,16 @@ def get_val(type, val):
         m_frame = ramec.get(val[:2])
         if m_frame is None:
             eprint("frame missing")
-            exit(54)
+            exit(55)
         if val[3:] not in m_frame:
             eprint("undefined variable")
-            exit(52)
-        return m_frame[val[3:]]['val']
+            exit(54)
+        tmp = m_frame[val[3:]]['val']
+        if tmp is None:
+            eprint("undefined value")
+            exit(56)
+        return tmp
+
     else:
         return cast[type](val)
 
@@ -85,10 +98,10 @@ def set_val(val, res, res_type):
     m_frame = ramec.get(val[:2])
     if m_frame is None:
         eprint("frame missing")
-        exit(54)
+        exit(55)
     if val[3:] not in m_frame:
         eprint("undefined variable")
-        exit(52)
+        exit(54)
     m_frame[val[3:]] = {'val': res, 'type': res_type}
 
 
@@ -137,7 +150,7 @@ def CALL():
     global i
     store_calls.append(i)
     # has same call siganture
-    JUMP();
+    JUMP()
 
 
 def RETURN():
@@ -196,21 +209,24 @@ def IDIV():
 
 
 def LT():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string', 'float']:
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string',
+                                                                                       'float']:
         eprint('type mismatch')
         exit(53)
     set_val(val1, get_val(type2, val2) < get_val(type3, val3), 'bool')
 
 
 def GT():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string', 'float']:
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string',
+                                                                                       'float']:
         eprint('type mismatch')
         exit(53)
     set_val(val1, get_val(type2, val2) > get_val(type3, val3), 'bool')
 
 
 def EQ():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string', 'float']:
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string',
+                                                                                       'float']:
         eprint('type mismatch')
         exit(53)
     set_val(val1, get_val(type2, val2) == get_val(type3, val3), 'bool')
@@ -269,32 +285,38 @@ def STRI2INT():
 
 
 def READ():
-    if type2 != 'type' or get_val(type2, val2) not in ['int', 'string', 'bool', 'float']:
+    typ = get_val(type2, val2)
+    if typ not in ['int', 'string', 'bool', 'float']:
         eprint('type mismatch')
         exit(53)
-    typ = get_val(type2, val2)
     vstup = inputs.readline().rstrip('\n')
     if typ == 'bool':
-        if 'true' in vstup.lower():
+        if 'true' == vstup.lower():
             set_val(val1, True, 'bool')
         else:
             set_val(val1, False, 'bool')
-    elif typ == 'int' and re.match('^[+-]?[\d]+$', vstup):
-        set_val(val1, int(vstup), 'int')
+    elif typ == 'int':
+        try:
+            set_val(val1, int(vstup), 'int')
+        except:
+            set_val(val1, 'nil', 'nil')
     elif typ == 'string':
         set_val(val1, vstup, 'string')
     elif typ == 'float':
-        set_val(val1, floati(vstup), 'float')
+        try:
+            set_val(val1, float.fromhex(vstup), 'float')
+        except:
+            set_val(val1, 'nil', 'nil')
     else:
-        set_val(val1, 'nil', 'nil')
+        exit(99)
 
 
 def WRITE():
     stri = get_val(type1, val1)
-    if get_type(type1,val1) == 'float':
+    if get_type(type1, val1) == 'float':
         print(float.hex(stri), end='')
     else:
-        print(xstr(stri), end='')
+        print(stri, end='')
 
 
 def CONCAT():
@@ -308,7 +330,7 @@ def STRLEN():
     if get_type(type2, val2) != 'string':
         eprint('type mismatch - STRLEN')
         exit(53)
-    length = len(xstr(get_val(type2, val2)))
+    length = len(get_val(type2, val2))
     set_val(val1, length, 'int')
 
 
@@ -330,7 +352,7 @@ def SETCHAR():
         exit(53)
     stri = get_val(type1, val1)
     index = get_val(type3, val3)
-    if index < 0 or index > len(stri) or len(get_val(type3, val3) < 1):
+    if index < 0 or index > len(stri) or len(get_val(type3, val3)) < 1:
         eprint('setchar error')
         exit(58)
     stri[index] = get_val(type3, val3)[0]
@@ -338,7 +360,7 @@ def SETCHAR():
 
 
 def TYPE():
-    set_val(val1, xstr(get_type(type2, val2)), 'string')
+    set_val(val1, get_type(type2, val2), 'string')
 
 
 # nothing needed
@@ -365,7 +387,7 @@ def JUMPIFEQ():
 
     if get_type(type2, val2) != get_type(type3, val3):
         eprint('type mismatch - JUMPIFEQ')
-        exit(53)()
+        exit(53)
 
     # skok
     if get_val(type2, val2) == get_val(type3, val3):
@@ -389,22 +411,27 @@ def JUMPIFNEQ():
 
 
 def EXIT():
-    exit(0)
+    if get_type(type1, val1) != 'int':
+        exit(53)
+    tmp = get_val(type1, val1)
+    if tmp < 0 or tmp > 49:
+        exit(57)
+    exit(tmp)
 
 
 def DPRINT():
-    stri = get_val(type1, val1)
-    eprint(xstr(stri))
+    eprint(get_val(type1, val1))
 
 
 def BREAK():
     eprint('state of interpret:')
 
+
 def INT2FLOAT():
     if get_type(type2, val2) != 'int':
         eprint('type mismatch')
         exit(53)
-    set_val(val1,float(get_val(type2, val2)),'float')
+    set_val(val1, float(get_val(type2, val2)), 'float')
 
 
 def FLOAT2INT():
@@ -424,45 +451,223 @@ def DIV():
     set_val(val1, get_val(type2, val2) / get_val(type3, val3), 'float')
 
 
+# STACK extension
+def CLEARS():
+    val_stack = [None]
+
+
+def ADDS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'float']:
+        exit(53)
+    val_stack[-1]['val'] += symb2['val']
+
+
+def SUBS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'float']:
+        exit(53)
+    val_stack[-1]['val'] -= symb2['val']
+
+
+def MULS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'float']:
+        exit(53)
+    val_stack[-1]['val'] *= symb2['val']
+
+
+def IDIVS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] != 'int':
+        exit(53)
+    if symb2['val'] == 0:
+        eprint('division by zero')
+        exit(57)
+    val_stack[-1]['val'] //= symb2['val']
+
+
+def LTS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'bool', 'string', 'float']:
+        exit(53)
+    val_stack[-1] = {'val': (val_stack[-1]['val'] < symb2['val']), 'type': 'bool'}
+
+
+def GTS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'bool', 'string', 'float']:
+        exit(53)
+    val_stack[-1] = {'val': (val_stack[-1]['val'] > symb2['val']), 'type': 'bool'}
+
+
+def EQS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'bool', 'string', 'float']:
+        exit(53)
+    val_stack[-1] = {'val': (val_stack[-1]['val'] == symb2['val']), 'type': 'bool'}
+
+
+def ANDS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] != 'bool':
+        exit(53)
+    val_stack[-1] = {'val': (val_stack[-1]['val'] and symb2['val']), 'type': 'bool'}
+
+
+def ORS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] != 'bool':
+        exit(53)
+    val_stack[-1] = {'val': (val_stack[-1]['val'] or symb2['val']), 'type': 'bool'}
+
+
+def NOTS():
+    if len(val_stack) < 2:
+        exit(56)
+    if val_stack[-1]['type'] != 'bool':
+        exit(53)
+    val_stack[-1]['val'] = not val_stack[-1]['val']
+
+
+def INT2CHARS():
+    if len(val_stack) < 2:
+        exit(56)
+    if val_stack[-1]['type'] != 'int':
+        exit(53)
+    try:
+        val_stack[-1] = {'val': chr(val_stack[-1]['val']), 'type': 'string'}
+    except:
+        eprint('int2char error')
+        exit(58)
+
+
+def STRI2INTS():
+    if len(val_stack) < 3:
+        exit(56)
+    symb2 = val_stack.pop()
+    if val_stack[-1]['type'] != 'string' or symb2['type'] != 'int':
+        exit(53)
+    index = symb2['val']
+    if index < 0 or index > len(val_stack[-1]['val']):
+        exit(58)
+
+    try:
+        val_stack[-1] = {'val': ord(val_stack[-1]['val'][index]), 'type': 'int'}
+    except:
+        exit(58)
+
+
+def JUMPIFEQS():
+    global i
+    if len(val_stack) < 4:
+        exit(56)
+    symb2 = val_stack.pop()
+    symb1 = val_stack.pop()
+    temp = val_stack.pop()
+    if temp['val'] is None:
+        eprint('undefined label')
+        exit(52)
+
+    if symb1['type'] != symb2['type']:
+        exit(53)
+
+    # skok
+    if symb1['val'] == symb2['val']:
+        i = temp['val']
+
+
+def JUMPIFNEQS():
+    global i
+    if len(val_stack) < 4:
+        exit(56)
+    symb2 = val_stack.pop()
+    symb1 = val_stack.pop()
+    temp = val_stack.pop()
+    if temp['val'] is None:
+        eprint('undefined label')
+        exit(52)
+
+    if symb1['type'] != symb2['type']:
+        exit(53)()
+
+    # skok
+    if symb1['val'] != symb2['val']:
+        i = temp['val']
+
+
 instructions = {
-    "MOVE":         {'call': MOVE,      'types': ["var", "symb", ]},
-    "CREATEFRAME":  {'call': CREATEFRAME,'types': []},
-    "DEFVAR":       {'call': DEFVAR,    'types': ["var", ]},
-    "PUSHFRAME":    {'call': PUSHFRAME, 'types': []},
-    "POPFRAME":     {'call': POPFRAME,  'types': []},
-    "CALL":         {'call': CALL,      'types': ["label", ]},
-    "RETURN":       {'call': RETURN,    'types': []},
-    "PUSHS":        {'call': PUSHS,     'types': ["symb", ]},
-    "POPS":         {'call': POPS,      'types': ["var", ]},
-    "ADD":          {'call': ADD,       'types': ["var", "symb", "symb", ]},
-    "SUB":          {'call': SUB,       'types': ["var", "symb", "symb", ]},
-    "MUL":          {'call': MUL,       'types': ["var", "symb", "symb", ]},
-    "IDIV":         {'call': IDIV,      'types': ["var", "symb", "symb", ]},
-    "LT":           {'call': LT,        'types': ["var", "symb", "symb", ]},
-    "GT":           {'call': GT,        'types': ["var", "symb", "symb", ]},
-    "EQ":           {'call': EQ,        'types': ["var", "symb", "symb", ]},
-    "AND":          {'call': AND,       'types': ["var", "symb", "symb", ]},
-    "OR":           {'call': OR,        'types': ["var", "symb", "symb", ]},
-    "NOT":          {'call': NOT,       'types': ["var", "symb", ]},
-    "INT2CHAR":     {'call': INT2CHAR,  'types': ["var", "symb", ]},
-    "STRI2INT":     {'call': STRI2INT,  'types': ["var", "symb", "symb", ]},
-    "READ":         {'call': READ,      'types': ["var", "type", ]},
-    "WRITE":        {'call': WRITE,     'types': ["symb", ]},
-    "CONCAT":       {'call': CONCAT,    'types': ["var", "symb", "symb", ]},
-    "STRLEN":       {'call': STRLEN,    'types': ["var", "symb", ]},
-    "GETCHAR":      {'call': GETCHAR,   'types': ["var", "symb", "symb", ]},
-    "SETCHAR":      {'call': SETCHAR,   'types': ["var", "symb", "symb", ]},
-    "TYPE":         {'call': TYPE,      'types': ["var", "symb", ]},
-    "LABEL":        {'call': LABEL,     'types': ["label", ]},
-    "JUMP":         {'call': JUMP,      'types': ["label", ]},
-    "JUMPIFEQ":     {'call': JUMPIFEQ,  'types': ["label", "symb", "symb", ]},
-    "JUMPIFNEQ":    {'call': JUMPIFNEQ, 'types': ["label", "symb", "symb", ]},
-    "EXIT":         {'call': EXIT,      'types': ["symb", ]},
-    "DPRINT":       {'call': DPRINT,    'types': ["symb", ]},
-    "BREAK":        {'call': BREAK,     'types': []},
-    "INT2FLOAT" :   {'call': INT2FLOAT, 'types':["var", 'symb',]},
-    "FLOAT2INT" :   {'call': FLOAT2INT, 'types':["var", "symb", ]},
-    "DIV" :         {'call': DIV,       'types':["var", 'symb', 'symb']},
+    "MOVE": {'call': MOVE, 'types': ["var", "symb", ]},
+    "CREATEFRAME": {'call': CREATEFRAME, 'types': []},
+    "DEFVAR": {'call': DEFVAR, 'types': ["var", ]},
+    "PUSHFRAME": {'call': PUSHFRAME, 'types': []},
+    "POPFRAME": {'call': POPFRAME, 'types': []},
+    "CALL": {'call': CALL, 'types': ["label", ]},
+    "RETURN": {'call': RETURN, 'types': []},
+    "PUSHS": {'call': PUSHS, 'types': ["symb", ]},
+    "POPS": {'call': POPS, 'types': ["var", ]},
+    "ADD": {'call': ADD, 'types': ["var", "symb", "symb", ]},
+    "SUB": {'call': SUB, 'types': ["var", "symb", "symb", ]},
+    "MUL": {'call': MUL, 'types': ["var", "symb", "symb", ]},
+    "IDIV": {'call': IDIV, 'types': ["var", "symb", "symb", ]},
+    "LT": {'call': LT, 'types': ["var", "symb", "symb", ]},
+    "GT": {'call': GT, 'types': ["var", "symb", "symb", ]},
+    "EQ": {'call': EQ, 'types': ["var", "symb", "symb", ]},
+    "AND": {'call': AND, 'types': ["var", "symb", "symb", ]},
+    "OR": {'call': OR, 'types': ["var", "symb", "symb", ]},
+    "NOT": {'call': NOT, 'types': ["var", "symb", ]},
+    "INT2CHAR": {'call': INT2CHAR, 'types': ["var", "symb", ]},
+    "STRI2INT": {'call': STRI2INT, 'types': ["var", "symb", "symb", ]},
+    "READ": {'call': READ, 'types': ["var", "type", ]},
+    "WRITE": {'call': WRITE, 'types': ["symb", ]},
+    "CONCAT": {'call': CONCAT, 'types': ["var", "symb", "symb", ]},
+    "STRLEN": {'call': STRLEN, 'types': ["var", "symb", ]},
+    "GETCHAR": {'call': GETCHAR, 'types': ["var", "symb", "symb", ]},
+    "SETCHAR": {'call': SETCHAR, 'types': ["var", "symb", "symb", ]},
+    "TYPE": {'call': TYPE, 'types': ["var", "symb", ]},
+    "LABEL": {'call': LABEL, 'types': ["label", ]},
+    "JUMP": {'call': JUMP, 'types': ["label", ]},
+    "JUMPIFEQ": {'call': JUMPIFEQ, 'types': ["label", "symb", "symb", ]},
+    "JUMPIFNEQ": {'call': JUMPIFNEQ, 'types': ["label", "symb", "symb", ]},
+    "EXIT": {'call': EXIT, 'types': ["symb", ]},
+    "DPRINT": {'call': DPRINT, 'types': ["symb", ]},
+    "BREAK": {'call': BREAK, 'types': []},
+    "INT2FLOAT": {'call': INT2FLOAT, 'types': ["var", 'symb', ]},
+    "FLOAT2INT": {'call': FLOAT2INT, 'types': ["var", "symb", ]},
+    "DIV": {'call': DIV, 'types': ["var", 'symb', 'symb']},
+    "CLEARS": {'call': CLEARS, 'types': []},
+    "ADDS": {'call': ADDS, 'types': []},
+    "SUBS": {'call': SUBS, 'types': []},
+    "MULS": {'call': MULS, 'types': []},
+    "IDIVS": {'call': IDIVS, 'types': []},
+    "LTS": {'call': LTS, 'types': []},
+    "GTS": {'call': GTS, 'types': []},
+    "EQS": {'call': EQS, 'types': []},
+    "ANDS": {'call': ANDS, 'types': []},
+    "ORS": {'call': ORS, 'types': []},
+    "NOTS": {'call': NOTS, 'types': []},
+    "INT2CHARS": {'call': INT2CHARS, 'types': []},
+    "STRI2INTS": {'call': STRI2INTS, 'types': []},
+    "JUMPIFEQS": {'call': JUMPIFEQS, 'types': []},
+    "JUMPIFNEQS": {'call': JUMPIFNEQS, 'types': []},
 }
 
 
@@ -485,21 +690,36 @@ def argcheck(xml, type, value):
 
 
 if __name__ == "__main__":
+    # help override
+    if len(sys.argv) > 2 and ('-h' in sys.argv or '--help' in sys.argv):
+        exit(10)
+
     parser = argparse.ArgumentParser(description='IPP project'
                                                  'note: at least 1 parametr must be specified ( -s or -i) '
-                                                 'interprets IPPcode21 from xml file')
+                                                 'interprets IPPcode21 from xml file'
+                                                 'outputs to stdout')
     parser.add_argument('-s', '--source', help='source file with xml')
     parser.add_argument('-i', '--input', help='file with input for given program\n')
     args = parser.parse_args()
+    # help has ben writen by parse_args
+
     if args.source is None and args.input is None:
         eprint("optional argument needed")
         exit(10)
     if args.source is not None:
-        source = args.source
+        try:
+            source = open(args.source, "r")
+        except:
+            eprint('failed to open input file')
+            exit(11)
     else:
         source = sys.stdin
     if args.input is not None:
-        inputs = open(args.input, "r")
+        try:
+            inputs = open(args.input, "r")
+        except:
+            eprint('failed to open input file')
+            exit(11)
     else:
         inputs = sys.stdin
 
@@ -507,12 +727,13 @@ if __name__ == "__main__":
     try:
         root = ET.parse(source).getroot()
     except:
-        eprint("XML declaration not well-formed")
+        eprint("XML not well-formed")
         exit(31)
 
     order_array = []
     # check xml structure
-    if root.tag != 'program' or root.get('language') != 'IPPcode21' or len(root.attrib) != 1:
+    if root.tag != 'program' or root.get('language').lower() != 'ippcode21' or len(
+            [x for x in root.attrib if x not in ['language', 'name', 'description']]) != 0:
         exit(32)
     # check ins-xml
     for inst in root:
@@ -530,6 +751,7 @@ if __name__ == "__main__":
             argx = inst[arg]
             if (argx.tag != 'arg' + str(arg + 1)) or argx.get('type') is None or len(argx.attrib) != 1:
                 exit(32)
+
             # transform escaped string chars
             if argx.get('type') == 'string':
                 reg = re.compile('\\\\(\d{3})')
@@ -559,9 +781,9 @@ if __name__ == "__main__":
             exit(52)
         labels[instruction[0].text] = list(root).index(instruction)
 
+    # intepret loop
     i = 0
     ma = len(root)
-
     while i < ma:
         ac_in = root[i]
         ac_opc = ac_in.get('opcode')
@@ -582,8 +804,5 @@ if __name__ == "__main__":
         except:
             pass
 
-        if ac_opc not in instructions:
-            eprint('wrong opcode')
-            exit(10)
         instructions[ac_opc]['call']()
         i += 1

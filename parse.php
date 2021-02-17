@@ -60,8 +60,6 @@ $instruction_set =array(
     function parseInput(){
         global $instruction_set;
 
-        #debug purposes - prepsat $stdin na STDIN
-        #stdin = fopen("ippcode","r");
         $stdin = STDIN;
         $line = fgets($stdin);
 
@@ -107,7 +105,7 @@ $instruction_set =array(
                 $arg = $doc->createElement("arg$arg_count");
                 switch ($operand){
                     case 'var':
-                        if(!preg_match('/^(?:LF|GF|TF)@[a-zA-Z_\-$&%*!?][a-zA-Z_\-$&%*!?\d]*$/',$matches[$arg_count])){
+                        if(!preg_match('/^(?:LF|GF|TF)@[a-zA-Z_\-$&%*!?][\w_\-$&%*!?]*$/',$matches[$arg_count])){
                             fprintf(STDERR,"lexical error - var\n");
                             exit(23);
                         }
@@ -117,7 +115,7 @@ $instruction_set =array(
                     case 'symb':
                         $at_pos = strpos($matches[$arg_count],'@');
                         if($at_pos == false){
-                            fprintf(STDERR,"lexical error - symb/@");
+                            fprintf(STDERR,"lexical error - symb@");
                             exit(23);
                         }
                         $type=substr($matches[$arg_count],0,$at_pos);
@@ -157,7 +155,7 @@ $instruction_set =array(
                                 #symb muze byt promena
                                 $type='var';
                                 $value = $matches[$arg_count];
-                                if(!preg_match('/^(?:LF|GF|TF)@[a-zA-Z_\-$&%*!?][a-zA-Z_\-$&%*!?\d]*$/',$value)){
+                                if(!preg_match('/^(?:LF|GF|TF)@[a-zA-Z_\-$&%*!?][\w_\-$&%*!?]*$/',$value)){
                                     fprintf(STDERR,"lexical error - symb>var\n");
                                     exit(23);
                                 }
@@ -165,7 +163,7 @@ $instruction_set =array(
                         }
                         break;
                     case 'label':
-                        if(!preg_match('/^[a-zA-Z_\-$&%*!?][a-zA-Z_\-$&%*!?\d]*$/',$matches[$arg_count])){
+                        if(!preg_match('/^[a-zA-Z_\-$&%*!?][\w_\-$&%*!?]*$/',$matches[$arg_count])){
                             fprintf(STDERR,"lexical error - label\n");
                             exit(23);
                         }
@@ -180,7 +178,7 @@ $instruction_set =array(
                         $type='type';
                         $value = $matches[$arg_count];
                         break;
-                    default: exit(99);
+                    default: exit(23);
                 }
 
                 $value = sanitize($value);
@@ -199,7 +197,11 @@ $instruction_set =array(
     ini_set('display_errors', 'stderr');
     if($argc >= 2) {
         if ( ($argv[1] == '-h' or $argv[1] == '--help') and $argc == 2) {
-            printf("this is help\n");
+            echo "usage: parse.php [-h]\n
+IPP parse expects ippcode21 ( similar to ifjcode20 ) on STDIN
+program return xml representation on STDOUT\n
+optional arguments:
+  -h, --help            show this help message and exit";
             exit(0);
         }
         else{

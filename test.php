@@ -18,23 +18,39 @@ if(array_key_exists('h',$options) or  array_key_exists('help',$options)){
         fprintf(STDERR,"arg error\n");
         exit(10);
     }
-    printf("this is help");
+    echo "usage: test.php [-h] [-d DIRECTORY] [-r] [--parse-script PARSER] [--int-script INTERPRET] [--parse-only] [--int-only] [--jexamxml JEXAMXML] [--jexamcfg JEXAMCFG]\n
+IPP performs automatic interepret test consists from up to 4 files .src and optional ( .in .out .rc) 
+results are stored in .HTML file in working directory\n
+optional arguments:
+  -h, --help                    show this help message and exit
+  -d , --directory DIRECTORY    specify directory with test files
+  -r , recursive                also search for test in subdirectories
+  --parse-script PARSER         specify parser file, defaults to 'parse.php'
+  --int-script INTERPRET        specify interpret file, defaults to 'interpret.py'
+  --parse-only                  run only parser
+  --int-only                    run only interpret
+  --jexamxml JEXAMXML           specify A7Soft .jar file, defaults to '/pub/courses/ipp/jexamxml/jexamxml.jar'
+  --jexamcfg JEXAMCFG           specify A7Soft cfg file, defaults to '/pub/courses/ipp/jexamxml/options'";
     exit(0);
 }
-$dir = getcwd();
+$dir = '.';#getcwd()
 if(array_key_exists('d',$options))
    $dir = $options['d'];
 
 if(array_key_exists('directory',$options))
     $dir = $options['directory'];
+if(!is_dir($dir))
+    exit(41);
 
 $parse_script = 'parse.php';
 if(array_key_exists('parse_script',$options))
     $parse_script = $options['parse_script'];
+fopen($parse_script,'r') or exit(41);
 
 $int_script = 'interpret.py';
 if(array_key_exists('int-script',$options))
     $int_script = $options['int-script'];
+fopen($int_script,'r') or exit(41);
 
 $parse_only = false;
 if(array_key_exists('parse-only',$options))
@@ -47,14 +63,18 @@ if(array_key_exists('int-only',$options))
 $jexamxml = '/pub/courses/ipp/jexamxml/jexamxml.jar';
 if(array_key_exists('jexamxml',$options))
     $jexamxml = $options['jexamxml'];
+
 $jexamcfg = '/pub/courses/ipp/jexamxml/options';
 if(array_key_exists('jexamcfg',$options))
     $jexamcfg = $options['jexamcfg'];
 
-
 $recurse = false;
 if(array_key_exists('recursive',$options) or array_key_exists('r',$options))
     $recurse = true;
+
+if($int_only and $parse_only)
+    exit(41);
+
 
 //files contains all found files and their paths
 //$files[i]['path'], $files[i]['filename'],
@@ -72,7 +92,7 @@ foreach ($iterator as $filename => $file) {
     $files[] = array('path' => $path['dirname'],'filename' => $path['filename']);
 }
 
-
+#create HTML header
 $dom = new DOMDocument('1.0');
 $dom->formatOutput = true;
 $html = $dom->createElement('html');
@@ -100,8 +120,6 @@ $pass_count = 0;
 $fail_count = 0;
 #testing
 foreach ($files as $iter){
-    #TODO smazat
-    echo $file,"\n";
     $retval = null;
     $output = null;
     $file = $iter['filename'];
@@ -124,49 +142,54 @@ foreach ($files as $iter){
     else
         $frc = fopen("$dir/$file.rc",'r');
 
-    #expecte retval
+    #expected retval
     $rcval = intval(fread($frc,filesize("$dir/$file.rc")));
-
     $pass = true;
 
     if($parse_only == true){
+        #file exist ?
+        fopen($jexamxml,'r') or exit(41);
+        if(!is_dir($jexamcfg))
+            exit(41);
+
         exec("php $parse_script < $dir/$file.src > $tmp",$output,$retval);
-        if( $retval != 0)
-            $pass = false;
-        #java -jar /pub/courses/ipp/jexamxml/jexamxml.jar vas_vystup.xml referencni.xml delta.xml /pub/courses/ipp/jexamxml/options
-        if($pass == true)
-            exec("java -jar $jexamxml $tmp $dir/$file.out delta.xml $jexamcfg", $output, $retval);
-        if($pass != true or $retval != $rcval){
-            $fail_count++;
-            $p->setAttribute('class','red');
-        } else{
+        if( $retval == 0 || $retval!=$rcval)
+            #java -jar /pub/courses/ipp/jexamxml/jexamxml.jar vas_vystup.xml referencni.xml delta.xml /pub/courses/ipp/jexamxml/options
+            exec("timeout 1s java -jar $jexamxml $tmp $dir/$file.out delta.xml $jexamcfg", $output, $retval);
+        if($retval == 0 || $retval==$rcval){
             $pass_count++;
             $p->setAttribute('class','green');
+        } else{
+            $fail_count++;
+            $p->setAttribute('class','red');
         }
     } elseif($int_only == true){
         exec("python3 $int_script --source $dir/$file.src  --input $dir/$file.in > $tmp",$output,$retval);
-        if($retval != $rcval){
+        if($retval == 0 || $retval!=$rcval){
+            exec("timeout 1s diff $dir/$file.out $tmp",$output,$retval);
+        }
+        if($retval == 0 || $retval==$rcval){
+            $pass_count++;
+            $p->setAttribute('class', 'green');
+        } else{
             $fail_count++;
             $p->setAttribute('class','red');
-        } else{
-            $pass_count++;
-            $p->setAttribute('class','green');
         }
     } else{
         $tmp_out = tempnam('.','IPP21_2');
         #parse & int
 
         exec("php $parse_script < $dir/$file.src > $tmp",$output,$retval);
-        if( $retval != 0)
-            $pass = false;
-        if($pass == true)
-            exec("timeout 10s python3 $int_script --source $tmp  --input $dir/$file.in > $tmp_out",$output,$retval);
-        if($pass != true or $retval != $rcval){
+        if( $retval == 0 || $retval!=$rcval)
+            exec("timeout 5s python3 $int_script --source $tmp  --input $dir/$file.in > $tmp_out",$output,$retval);
+        if( $retval == 0 || $retval!=$rcval)
+            exec("timeout 1s diff $dir/$file.out $tmp_out",$output,$retval);
+        if( $retval == 0 || $retval==$rcval) {
+            $pass_count++;
+            $p->setAttribute('class', 'green');
+        }else{
             $fail_count++;
             $p->setAttribute('class','red');
-        } else{
-            $pass_count++;
-            $p->setAttribute('class','green');
         }
 
         unlink($tmp_out);
@@ -193,5 +216,5 @@ $sum->setAttribute('class','red');
 $body->appendChild($sum);
 
 $html_file = fopen('tests.html','w');
-fprintf ($html_file,"<!DOCTYPE html>\n".$dom->saveHTML());
+fprintf($html_file,"<!DOCTYPE html>\n".$dom->saveHTML());
 ?>
