@@ -21,7 +21,7 @@ regex = {
     'nil': '^nil$',
     'label': '^[a-zA-Z_\-$&%*!?][\w\-$&%*!?]*$',
     'type': '^int|bool|string|nil|float$',
-    'float': '',
+    'float': '(?i)^0x([a-f]|[\d])(\.[\d|a-f]*)?p(\+|-)?[\d]*$',
 }
 
 
@@ -670,11 +670,11 @@ instructions = {
     "JUMPIFNEQS": {'call': JUMPIFNEQS, 'types': []},
 }
 
-
+#print to stderr
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
-
+#syntax/lexical check of argument
 def argcheck(xml, type, value):
     translate = {
         'var': ['var'],
@@ -693,7 +693,7 @@ if __name__ == "__main__":
     # help override
     if len(sys.argv) > 2 and ('-h' in sys.argv or '--help' in sys.argv):
         exit(10)
-
+    #parsing arguments
     parser = argparse.ArgumentParser(description='IPP project'
                                                  'note: at least 1 parametr must be specified ( -s or -i) '
                                                  'interprets IPPcode21 from xml file'
@@ -735,11 +735,10 @@ if __name__ == "__main__":
     if root.tag != 'program' or root.get('language').lower() != 'ippcode21' or len(
             [x for x in root.attrib if x not in ['language', 'name', 'description']]) != 0:
         exit(32)
-    # check ins-xml
+    # check instructions in xml
     for inst in root:
         if inst.tag != 'instruction' or inst.get('order') is None or instructions.get(inst.get('opcode'), {}).get(
-                'call') is None or len(
-            inst.attrib) != 2:
+                'call') is None or len(inst.attrib) != 2:
             exit(32)
         order_array.append(int(inst.get('order')))
         # check args-xml need to sort first
@@ -756,10 +755,8 @@ if __name__ == "__main__":
             if argx.get('type') == 'string':
                 reg = re.compile('\\\\(\d{3})')
 
-
                 def replace(match):
                     return chr(int(match.group(1)))
-
 
                 argx.text = reg.sub(replace, xstr(argx.text))
 

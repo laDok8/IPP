@@ -42,6 +42,7 @@ $instruction_set =array(
 
 );
 
+    #lexical analysis check - all escaped character are correct
     function escaped($string ){
         //regex returns weird 2d array
         preg_match_all('/\\\\/',$string,$m1);
@@ -49,6 +50,7 @@ $instruction_set =array(
         return count($m1[0]) == count($m2[0]);
 
     }
+    #chence XML chars to special entities
     function sanitize($string){
         $string = str_replace('&','&amp;',$string);
         $string = str_replace('<','&lt;',$string);
@@ -57,14 +59,22 @@ $instruction_set =array(
         return str_replace('>','&gt;',$string);
     }
 
+    #input parsing function
     function parseInput(){
         global $instruction_set;
 
         $stdin = STDIN;
-        $line = fgets($stdin);
 
-        #remove coment and strip
-        $line = trim(preg_replace("/(?<!\\\\)#.*/",'',$line));
+        #remove starting empty lines
+        while(true){
+            $line = fgets($stdin);
+            if($line == false)
+                break;
+            $line = trim(preg_replace("/(?<!\\\\)#.*/",'',$line));
+            if($line != "")
+                break;
+        }
+        #header check
         if(!preg_match('/^.IPPcode21$/i',$line)){
             fprintf(STDERR,"wrong header\n");
             exit(21);
@@ -87,6 +97,7 @@ $instruction_set =array(
                 continue;
             $matches[0] = strtoupper($matches[0]);
 
+            #create DOC element
             $inst = $doc->createElement('instruction');
             $inst->setAttribute('order',$ins_count);
             $inst->setAttribute('opcode',$matches[0]);
@@ -99,7 +110,7 @@ $instruction_set =array(
                 fprintf(STDERR, "operand error\n");
                 exit(23);
             }
-            #zpracovani argumentu instrukce
+            #lexical analysis of instruction arguments using regular expresion
             $arg_count=1;
             foreach($instruction_set[$matches[0]] as $operand){
                 $arg = $doc->createElement("arg$arg_count");
@@ -205,7 +216,7 @@ optional arguments:
             exit(0);
         }
         else{
-            printf("unrecognized command-line option\n");
+            fprintf("unrecognized command-line option\n");
             exit(10);
         }
     }
