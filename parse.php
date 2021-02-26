@@ -177,7 +177,7 @@ $instruction_set =array(
                         $value = $matches[$arg_count];
                         break;
                     case 'type':
-                        if(!preg_match('/^int|bool|string|nil|float$/',$matches[$arg_count])){
+                        if(!preg_match('/^(int|bool|string|nil|float)$/',$matches[$arg_count])){
                             fprintf(STDERR,"lexical error - type\n");
                             exit(23);
                         }

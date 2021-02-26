@@ -184,7 +184,7 @@ foreach ($files as $iter){
 
         exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
-            exec("timeout 5s python3 $int_script --source $tmp  --input $path/$file.in > $tmp_out",$output,$retval);
+            exec("timeout 3s python3 $int_script --source $tmp  --input $path/$file.in > $tmp_out",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
             exec("timeout 1s diff $path/$file.out $tmp_out",$output,$retval);
         if( $retval == 0 || $retval==$rcval) {
@@ -198,16 +198,12 @@ foreach ($files as $iter){
         unlink($tmp_out);
     }
 
-
-
     if(!array_key_exists($path,$res_arr))
         $res_arr[$path] = [];
     array_push($res_arr[$path],$p);
     unlink($tmp);
 
 }
-
-
 
 #creating html file
 $total_count = $pass_count+$fail_count;
@@ -219,7 +215,6 @@ $sum->setAttribute('class','red');
 $body->appendChild($sum);
 $sum = $dom->createElement('p',"___________________________________________");
 $body->appendChild($sum);
-
 
 #outputing each dir separately
 foreach($res_arr as $key => $res_dirs){
@@ -246,12 +241,6 @@ foreach($res_arr as $key => $res_dirs){
     $sum->setAttribute('class','red');
     $body->appendChild($sum);
 }
-
-
-
-
-
-
 
 $html_file = fopen('tests.html','w');
 fprintf($html_file,"<!DOCTYPE html>\n".$dom->saveHTML());
