@@ -1,5 +1,7 @@
 <?php
 #main
+
+#parsing arguments
 ini_set('display_errors', 'stderr');
 $longopts  = array(
     "help",
@@ -33,7 +35,7 @@ optional arguments:
   --jexamcfg JEXAMCFG           specify A7Soft cfg file, defaults to '/pub/courses/ipp/jexamxml/options'";
     exit(0);
 }
-$dir = '.';#getcwd()
+$dir = '.';
 if(array_key_exists('d',$options))
    $dir = $options['d'];
 
@@ -206,6 +208,8 @@ foreach ($files as $iter){
 }
 
 
+
+#creating html file
 $total_count = $pass_count+$fail_count;
 $sum = $dom->createElement('p',"passed: $pass_count / $total_count");
 $sum->setAttribute('class','green');

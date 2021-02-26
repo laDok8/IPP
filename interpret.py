@@ -225,19 +225,11 @@ def GT():
 
 
 def EQ():
-    typ2 = get_type(type2, val2)
-    typ3 = get_type(type3, val3)
-
-    #EQ can compare nil
-    if typ2 == 'nil' and typ3 == 'nil':
-        set_val(val1, 'true', 'bool')
-    elif typ2 == 'nil' or typ3 == 'nil':
-        set_val(val1, 'false', 'bool')
-    elif typ2 != typ3 or typ3 not in ['int', 'bool', 'string', 'float']:
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string',
+                                                                                       'float']:
         eprint('type mismatch')
         exit(53)
-    else:
-        set_val(val1, get_val(type2, val2) == get_val(type3, val3), 'bool')
+    set_val(val1, get_val(type2, val2) == get_val(type3, val3), 'bool')
 
 
 def AND():
@@ -297,15 +289,8 @@ def READ():
     if typ not in ['int', 'string', 'bool', 'float']:
         eprint('type mismatch')
         exit(53)
-    _vstup = inputs.readline()
-    flag = '\n' in _vstup
-    vstup = _vstup.rstrip('\n')
-
-    if typ == 'string' and flag:
-        set_val(val1, vstup, 'string')
-    elif len(vstup) == 0:
-        set_val(val1, 'nil', 'nil')
-    elif typ == 'bool':
+    vstup = inputs.readline().rstrip('\n')
+    if typ == 'bool':
         if 'true' == vstup.lower():
             set_val(val1, True, 'bool')
         else:
@@ -315,6 +300,8 @@ def READ():
             set_val(val1, int(vstup), 'int')
         except:
             set_val(val1, 'nil', 'nil')
+    elif typ == 'string':
+        set_val(val1, vstup, 'string')
     elif typ == 'float':
         try:
             set_val(val1, float.fromhex(vstup), 'float')
@@ -328,10 +315,6 @@ def WRITE():
     stri = get_val(type1, val1)
     if get_type(type1, val1) == 'float':
         print(float.hex(stri), end='')
-    elif get_type(type1, val1) == 'nil':
-        return
-    elif get_type(type1, val1) == 'bool':
-        print(str(stri).lower(), end='')
     else:
         print(stri, end='')
 
@@ -357,43 +340,27 @@ def GETCHAR():
         exit(53)
     stri = get_val(type2, val2)
     index = get_val(type3, val3)
-    if index < 0 or index >= len(stri):
+    if index < 0 or index > len(stri):
         eprint('getchar error')
         exit(58)
     set_val(val1, stri[index], 'string')
 
 
 def SETCHAR():
-    if get_type(type2, val2) != 'int' or get_type(type3, val3) != 'string' or get_type(type1, val1) != 'string':
+    if get_type(type2, val2) != 'int' or get_type(type3, val3) != 'string':
         eprint('type mismatch')
         exit(53)
     stri = get_val(type1, val1)
-    index = get_val(type2, val2)
+    index = get_val(type3, val3)
     if index < 0 or index > len(stri) or len(get_val(type3, val3)) < 1:
         eprint('setchar error')
         exit(58)
-    set_val(val1, stri[:index] + get_val(type3, val3)[0] + stri[index+1:], 'string')
+    stri[index] = get_val(type3, val3)[0]
+    set_val(val1, stri, 'string')
 
 
 def TYPE():
-    #get_type but unint var is allowed
-    if type2 == 'var':
-        m_frame = ramec.get(val2[:2])
-        if m_frame is None:
-            eprint("frame missing")
-            exit(55)
-        if val2[3:] not in m_frame:
-            eprint("undefined variable")
-            exit(54)
-        tmp = m_frame[val2[3:]]['type']
-        if tmp is None:
-            alter_type = ''
-        else:
-            alter_type = tmp
-    else:
-        alter_type = type2
-
-    set_val(val1, alter_type, 'string')
+    set_val(val1, get_type(type2, val2), 'string')
 
 
 # nothing needed
@@ -418,18 +385,12 @@ def JUMPIFEQ():
         eprint('undefined label')
         exit(52)
 
-    typ2 = get_type(type2, val2)
-    typ3 = get_type(type3, val3)
-
-    # EQ can compare nil
-    if typ2 == 'nil' and typ3 == 'nil':
-        i = temp
-    elif typ2 == 'nil' or typ3 == 'nil':
-        return
-    elif typ2 != typ3 or typ3 not in ['int', 'bool', 'string', 'float']:
+    if get_type(type2, val2) != get_type(type3, val3):
         eprint('type mismatch - JUMPIFEQ')
         exit(53)
-    elif get_val(type2, val2) == get_val(type3, val3):
+
+    # skok
+    if get_val(type2, val2) == get_val(type3, val3):
         i = temp
 
 
@@ -440,18 +401,12 @@ def JUMPIFNEQ():
         eprint('undefined label')
         exit(52)
 
-    typ2 = get_type(type2, val2)
-    typ3 = get_type(type3, val3)
-
-    # EQ can compare nil
-    if typ2 == 'nil' and typ3 == 'nil':
-        return
-    elif typ2 == 'nil' or typ3 == 'nil':
-        i = temp
-    elif typ2 != typ3 or typ3 not in ['int', 'bool', 'string', 'float']:
-        eprint('type mismatch - JUMPIFEQ')
+    if get_type(type2, val2) != get_type(type3, val3):
+        eprint('type mismatch - JUMPIFNEQ')
         exit(53)
-    elif get_val(type2, val2) != get_val(type3, val3):
+
+    # skok
+    if get_val(type2, val2) != get_val(type3, val3):
         i = temp
 
 
@@ -505,7 +460,7 @@ def ADDS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] not in ['int', 'float']:
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'float']:
         exit(53)
     val_stack[-1]['val'] += symb2['val']
 
@@ -514,7 +469,7 @@ def SUBS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] not in ['int', 'float']:
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'float']:
         exit(53)
     val_stack[-1]['val'] -= symb2['val']
 
@@ -523,7 +478,7 @@ def MULS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] not in ['int', 'float']:
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'float']:
         exit(53)
     val_stack[-1]['val'] *= symb2['val']
 
@@ -532,7 +487,7 @@ def IDIVS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] != 'int':
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] != 'int':
         exit(53)
     if symb2['val'] == 0:
         eprint('division by zero')
@@ -544,7 +499,7 @@ def LTS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] not in ['int', 'bool', 'string', 'float']:
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'bool', 'string', 'float']:
         exit(53)
     val_stack[-1] = {'val': (val_stack[-1]['val'] < symb2['val']), 'type': 'bool'}
 
@@ -553,7 +508,7 @@ def GTS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] not in ['int', 'bool', 'string', 'float']:
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'bool', 'string', 'float']:
         exit(53)
     val_stack[-1] = {'val': (val_stack[-1]['val'] > symb2['val']), 'type': 'bool'}
 
@@ -562,24 +517,16 @@ def EQS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-
-
-    # EQ can compare nil
-    if symb2['type'] == 'nil' and val_stack[-1]['type'] == 'nil':
-        val_stack[-1] = {'val': True, 'type': 'bool'}
-    elif symb2['type'] == 'nil' or val_stack[-1]['type'] == 'nil':
-        val_stack[-1] = {'val': False, 'type': 'bool'}
-    elif symb2['type'] != val_stack[-1]['type']:
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] not in ['int', 'bool', 'string', 'float']:
         exit(53)
-    else:
-        val_stack[-1] = {'val': (val_stack[-1]['val'] == symb2['val']), 'type': 'bool'}
+    val_stack[-1] = {'val': (val_stack[-1]['val'] == symb2['val']), 'type': 'bool'}
 
 
 def ANDS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] != 'bool':
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] != 'bool':
         exit(53)
     val_stack[-1] = {'val': (val_stack[-1]['val'] and symb2['val']), 'type': 'bool'}
 
@@ -588,7 +535,7 @@ def ORS():
     if len(val_stack) < 3:
         exit(56)
     symb2 = val_stack.pop()
-    if symb2['type'] != val_stack[-1]['type'] or symb2['type'] != 'bool':
+    if symb2['type'] != val_stack[-1]['type'] and symb2['type'] != 'bool':
         exit(53)
     val_stack[-1] = {'val': (val_stack[-1]['val'] or symb2['val']), 'type': 'bool'}
 
@@ -631,48 +578,40 @@ def STRI2INTS():
 
 def JUMPIFEQS():
     global i
-    if len(val_stack) < 3:
+    if len(val_stack) < 4:
         exit(56)
-
-    temp = labels.get(val1)
-    if temp is None:
+    symb2 = val_stack.pop()
+    symb1 = val_stack.pop()
+    temp = val_stack.pop()
+    if temp['val'] is None:
         eprint('undefined label')
         exit(52)
 
-    symb2 = val_stack.pop()
-    symb1 = val_stack.pop()
-
-    if symb1['type'] == 'nil' and symb2['type'] == 'nil':
-        i = temp
-    elif symb1['type'] == 'nil' or symb2['type'] == 'nil':
-        return
-    elif symb1['type'] != symb2['type']:
+    if symb1['type'] != symb2['type']:
         exit(53)
-    elif symb1['val'] == symb2['val']:
-        i = temp
+
+    # skok
+    if symb1['val'] == symb2['val']:
+        i = temp['val']
 
 
 def JUMPIFNEQS():
     global i
-    if len(val_stack) < 3:
+    if len(val_stack) < 4:
         exit(56)
-
-    temp = labels.get(val1)
-    if temp is None:
+    symb2 = val_stack.pop()
+    symb1 = val_stack.pop()
+    temp = val_stack.pop()
+    if temp['val'] is None:
         eprint('undefined label')
         exit(52)
 
-    symb2 = val_stack.pop()
-    symb1 = val_stack.pop()
+    if symb1['type'] != symb2['type']:
+        exit(53)()
 
-    if symb1['type'] == 'nil' and symb2['type'] == 'nil':
-        return
-    elif symb1['type'] == 'nil' or symb2['type'] == 'nil':
-        i = temp
-    elif symb1['type'] != symb2['type']:
-        exit(53)
-    elif symb1['val'] != symb2['val']:
-        i = temp
+    # skok
+    if symb1['val'] != symb2['val']:
+        i = temp['val']
 
 
 instructions = {
@@ -731,11 +670,11 @@ instructions = {
     "JUMPIFNEQS": {'call': JUMPIFNEQS, 'types': ["label",]},
 }
 
-
+#print to stderr
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
-
+#syntax/lexical check of argument
 def argcheck(xml, type, value):
     translate = {
         'var': ['var'],
@@ -754,7 +693,7 @@ if __name__ == "__main__":
     # help override
     if len(sys.argv) > 2 and ('-h' in sys.argv or '--help' in sys.argv):
         exit(10)
-
+    #parsing arguments
     parser = argparse.ArgumentParser(description='IPP project'
                                                  'note: at least 1 parametr must be specified ( -s or -i) '
                                                  'interprets IPPcode21 from xml file'
@@ -796,11 +735,10 @@ if __name__ == "__main__":
     if root.tag != 'program' or root.get('language').lower() != 'ippcode21' or len(
             [x for x in root.attrib if x not in ['language', 'name', 'description']]) != 0:
         exit(32)
-    # check ins-xml
+    # check instructions in xml
     for inst in root:
         if inst.tag != 'instruction' or inst.get('order') is None or instructions.get(inst.get('opcode'), {}).get(
-                'call') is None or len(
-            inst.attrib) != 2:
+                'call') is None or len(inst.attrib) != 2:
             exit(32)
         try:
             order_array.append(int(inst.get('order')))
