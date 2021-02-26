@@ -78,7 +78,8 @@ if($int_only and $parse_only)
 
 //files contains all found files and their paths
 //$files[i]['path'], $files[i]['filename'],
-$iterator = new RecursiveDirectoryIterator($dir);
+$dirs = new RecursiveDirectoryIterator($dir);
+$iterator = new RecursiveIteratorIterator($dirs);
 $files = [];
 foreach ($iterator as $filename => $file) {
     $path = pathinfo($filename);
@@ -110,7 +111,8 @@ $css = '.green{color:#008000;}
         body{background-color:#f2f2f2}
         h1{text-align: center;}
         #body,h1,h2,h3,h4,h5,h6{font-family: Arial,Helvetica,Arial,sans-serif;margin: 0 0 25px 0;}
-        div{margin: 12px 25px 75px 100px;}';
+        div{margin: 12px 25px 75px 100px;display: flex;flex-wrap: wrap;}
+        div > p {margin: 0 0 10px 10px;}';
 $style = $dom->createElement('style', $css);
 $body->appendChild($style);
 $header = $dom->createElement('h1', 'vysledky automatickych testu IPP21');
@@ -118,6 +120,7 @@ $body->appendChild($header);
 
 $pass_count = 0;
 $fail_count = 0;
+$res_arr =[];
 #testing
 foreach ($files as $iter){
     $retval = null;
@@ -126,36 +129,34 @@ foreach ($files as $iter){
     $path = $iter['path'];
     $tmp = tempnam('.','IPP21');
 
-    $p = $dom->createElement('p',"$dir/$file.src");
-    $body->appendChild($p);
+    $p = $dom->createElement('p',"$file");
 
     #create empty .in .out and .rc
-    if(file_exists("$dir/$file.in") == false)
-        fopen("$dir/$file.in",'w');
-    if(file_exists("$dir/$file.out") == false)
-        fopen("$dir/$file.out",'w');
+    if(file_exists("$path/$file.in") == false)
+        fopen("$path/$file.in",'w');
+    if(file_exists("$path/$file.out") == false)
+        fopen("$path/$file.out",'w');
     $frc = null;
-    if(file_exists("$dir/$file.rc") == false) {
-        $frc = fopen("$dir/$file.rc",'w+');
+    if(file_exists("$path/$file.rc") == false) {
+        $frc = fopen("$path/$file.rc",'w+');
         fwrite($frc, '0');
     }
     else
-        $frc = fopen("$dir/$file.rc",'r');
+        $frc = fopen("$path/$file.rc",'r');
 
     #expected retval
-    $rcval = intval(fread($frc,filesize("$dir/$file.rc")));
+    $rcval = intval(fread($frc,filesize("$path/$file.rc")));
     $pass = true;
 
     if($parse_only == true){
         #file exist ?
         fopen($jexamxml,'r') or exit(41);
-        if(!is_dir($jexamcfg))
-            exit(41);
+        fopen($jexamcfg,'r') or exit(41);
 
-        exec("php $parse_script < $dir/$file.src > $tmp",$output,$retval);
+        exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
             #java -jar /pub/courses/ipp/jexamxml/jexamxml.jar vas_vystup.xml referencni.xml delta.xml /pub/courses/ipp/jexamxml/options
-            exec("timeout 1s java -jar $jexamxml $tmp $dir/$file.out delta.xml $jexamcfg", $output, $retval);
+            exec("timeout 1s java -jar $jexamxml $tmp $path/$file.out delta.xml $jexamcfg", $output, $retval);
         if($retval == 0 || $retval==$rcval){
             $pass_count++;
             $p->setAttribute('class','green');
@@ -164,9 +165,9 @@ foreach ($files as $iter){
             $p->setAttribute('class','red');
         }
     } elseif($int_only == true){
-        exec("python3 $int_script --source $dir/$file.src  --input $dir/$file.in > $tmp",$output,$retval);
+        exec("python3 $int_script --source $path/$file.src  --input $path/$file.in > $tmp",$output,$retval);
         if($retval == 0 || $retval!=$rcval){
-            exec("timeout 1s diff $dir/$file.out $tmp",$output,$retval);
+            exec("timeout 1s diff $path/$file.out $tmp",$output,$retval);
         }
         if($retval == 0 || $retval==$rcval){
             $pass_count++;
@@ -179,11 +180,11 @@ foreach ($files as $iter){
         $tmp_out = tempnam('.','IPP21_2');
         #parse & int
 
-        exec("php $parse_script < $dir/$file.src > $tmp",$output,$retval);
+        exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
-            exec("timeout 5s python3 $int_script --source $tmp  --input $dir/$file.in > $tmp_out",$output,$retval);
+            exec("timeout 5s python3 $int_script --source $tmp  --input $path/$file.in > $tmp_out",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
-            exec("timeout 1s diff $dir/$file.out $tmp_out",$output,$retval);
+            exec("timeout 1s diff $path/$file.out $tmp_out",$output,$retval);
         if( $retval == 0 || $retval==$rcval) {
             $pass_count++;
             $p->setAttribute('class', 'green');
@@ -197,23 +198,56 @@ foreach ($files as $iter){
 
 
 
-
+    if(!array_key_exists($path,$res_arr))
+        $res_arr[$path] = [];
+    array_push($res_arr[$path],$p);
     unlink($tmp);
 
 }
 
 
-
-
 $total_count = $pass_count+$fail_count;
-$sum = $dom->createElement('p',"___________________________________________");
-$body->appendChild($sum);
 $sum = $dom->createElement('p',"passed: $pass_count / $total_count");
 $sum->setAttribute('class','green');
 $body->appendChild($sum);
 $sum = $dom->createElement('p',"failed: $fail_count / $total_count");
 $sum->setAttribute('class','red');
 $body->appendChild($sum);
+$sum = $dom->createElement('p',"___________________________________________");
+$body->appendChild($sum);
+
+
+#outputing each dir separately
+foreach($res_arr as $key => $res_dirs){
+    $h2 = $dom->createElement('h2',"$key");
+    $body->appendChild($h2);
+    $div = $dom->createElement('div');
+    $body->appendChild($div);
+    $pass_count = 0;
+    $fail_count = 0;
+    foreach($res_dirs as $result){
+        $div->appendChild($result);
+        $clr = $result->getAttribute('class');
+        if($clr == 'green'){
+            $pass_count++;
+        } else{
+            $fail_count++;
+        }
+    }
+    $total_count = $pass_count+$fail_count;
+    $sum = $dom->createElement('p',"passed: $pass_count / $total_count");
+    $sum->setAttribute('class','green');
+    $body->appendChild($sum);
+    $sum = $dom->createElement('p',"failed: $fail_count / $total_count \n");
+    $sum->setAttribute('class','red');
+    $body->appendChild($sum);
+}
+
+
+
+
+
+
 
 $html_file = fopen('tests.html','w');
 fprintf($html_file,"<!DOCTYPE html>\n".$dom->saveHTML());

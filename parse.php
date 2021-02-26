@@ -60,11 +60,13 @@ $instruction_set =array(
     function parseInput(){
         global $instruction_set;
 
-        $stdin = STDIN;
-        $line = fgets($stdin);
-
         #remove coment and strip
-        $line = trim(preg_replace("/(?<!\\\\)#.*/",'',$line));
+        while($line = fgets(STDIN)) {
+            $line = trim(preg_replace("/(?<!\\\\)#.*/", '', $line));
+            if(strlen($line)>0)
+                break;
+        }
+
         if(!preg_match('/^.IPPcode21$/i',$line)){
             fprintf(STDERR,"wrong header\n");
             exit(21);
@@ -77,7 +79,7 @@ $instruction_set =array(
         $root->setAttribute('language', "IPPcode21");
         $root = $doc->appendChild($root);
 
-        while( $line = fgets($stdin)) {
+        while( $line = fgets(STDIN)) {
             #remove comments
             $line = preg_replace("/(?<!\\\\)#.*/",'',$line);
             preg_match_all("/\S+/",$line, $matches);
@@ -171,7 +173,7 @@ $instruction_set =array(
                         $value = $matches[$arg_count];
                         break;
                     case 'type':
-                        if(!preg_match('/^int|bool|string|nil|float$/',$matches[$arg_count])){
+                        if(!preg_match('/^(int|bool|string|nil|float)$/',$matches[$arg_count])){
                             fprintf(STDERR,"lexical error - type\n");
                             exit(23);
                         }
