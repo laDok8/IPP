@@ -26,7 +26,7 @@ results are stored in .HTML file in working directory\n
 optional arguments:
   -h, --help                    show this help message and exit
   -d , --directory DIRECTORY    specify directory with test files
-  -r , recursive                also search for test in subdirectories
+  -r , --recursive              also search for test in subdirectories
   --parse-script PARSER         specify parser file, defaults to 'parse.php'
   --int-script INTERPRET        specify interpret file, defaults to 'interpret.py'
   --parse-only                  run only parser
@@ -80,8 +80,7 @@ if($int_only and $parse_only)
 
 //files contains all found files and their paths
 //$files[i]['path'], $files[i]['filename'],
-$dirs = new RecursiveDirectoryIterator($dir);
-$iterator = new RecursiveIteratorIterator($dirs);
+$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
 $files = [];
 foreach ($iterator as $filename => $file) {
     $path = pathinfo($filename);
@@ -133,20 +132,25 @@ foreach ($files as $iter){
 
     $p = $dom->createElement('p',"$file");
 
+    #check readability
+    if(!is_readable($path))
+        exit(41);
+    fopen("$path/$file.src",'r') or exit(11);
     #create empty .in .out and .rc
     if(file_exists("$path/$file.in") == false)
-        fopen("$path/$file.in",'w');
+        fopen("$path/$file.in",'w') or exit(11);
     if(file_exists("$path/$file.out") == false)
-        fopen("$path/$file.out",'w');
+        fopen("$path/$file.out",'w') or exit(11);
     $frc = null;
     if(file_exists("$path/$file.rc") == false) {
-        $frc = fopen("$path/$file.rc",'w+');
+        $frc = fopen("$path/$file.rc",'w+') or exit(11);
         fwrite($frc, '0');
     }
     else
-        $frc = fopen("$path/$file.rc",'r');
+        $frc = fopen("$path/$file.rc",'r') or exit(11);
 
     #expected retval
+    fseek($frc,0,SEEK_SET);
     $rcval = intval(fread($frc,filesize("$path/$file.rc")));
     $pass = true;
 
@@ -157,9 +161,8 @@ foreach ($files as $iter){
 
         exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
-            #java -jar /pub/courses/ipp/jexamxml/jexamxml.jar vas_vystup.xml referencni.xml delta.xml /pub/courses/ipp/jexamxml/options
             exec("timeout 1s java -jar $jexamxml $tmp $path/$file.out delta.xml $jexamcfg", $output, $retval);
-        if($retval == 0 || $retval==$rcval){
+        if($retval==$rcval){
             $pass_count++;
             $p->setAttribute('class','green');
         } else{
@@ -171,7 +174,7 @@ foreach ($files as $iter){
         if($retval == 0 || $retval!=$rcval){
             exec("timeout 1s diff $path/$file.out $tmp",$output,$retval);
         }
-        if($retval == 0 || $retval==$rcval){
+        if($retval==$rcval){
             $pass_count++;
             $p->setAttribute('class', 'green');
         } else{
@@ -181,13 +184,12 @@ foreach ($files as $iter){
     } else{
         $tmp_out = tempnam('.','IPP21_2');
         #parse & int
-
         exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
             exec("timeout 3s python3 $int_script --source $tmp  --input $path/$file.in > $tmp_out",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
             exec("timeout 1s diff $path/$file.out $tmp_out",$output,$retval);
-        if( $retval == 0 || $retval==$rcval) {
+        if($retval==$rcval) {
             $pass_count++;
             $p->setAttribute('class', 'green');
         }else{
@@ -197,7 +199,7 @@ foreach ($files as $iter){
 
         unlink($tmp_out);
     }
-
+    #add files to dir structure for HTML creation
     if(!array_key_exists($path,$res_arr))
         $res_arr[$path] = [];
     array_push($res_arr[$path],$p);
@@ -205,7 +207,7 @@ foreach ($files as $iter){
 
 }
 
-#creating html file
+#total test info
 $total_count = $pass_count+$fail_count;
 $sum = $dom->createElement('p',"passed: $pass_count / $total_count");
 $sum->setAttribute('class','green');
@@ -242,6 +244,7 @@ foreach($res_arr as $key => $res_dirs){
     $body->appendChild($sum);
 }
 
-$html_file = fopen('tests.html','w');
+#creating html file
+$html_file = fopen('tests.html','w') or exit(12);
 fprintf($html_file,"<!DOCTYPE html>\n".$dom->saveHTML());
 ?>

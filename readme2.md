@@ -25,7 +25,7 @@ Funkce: `get_val, set_val, get_type` vytváří vhodnou abstrakci pro jednotný 
 Pro jednoduché určení typů jsou proměnné ukládány v tabulce
 tvaru `{'val': HODNOTA, 'type': TYP}`. Implementace rozšíření float byla jednoduchá, jelikož stačilo vytvořit regulární výraz pro kontrolu typu
 a přidat možnost typu float do požadovaných instrukcí. Dále je naprogramováno i rozšíření STACK, základ pro něj je vytvořen již z instrukcí
-`PUSHS, POPS`, tak jeho rozšíření bylo jednoduché. Případný výstup insturkce write je směrován na stdout a ladící
+`PUSHS, POPS`, tak jeho rozšíření bylo jednoduché. Případný výstup instrukce write je směrován na stdout a ladící
 instrukce `DPRINT, BREAK` je výstup prováděn na stderr.
 ### test.php
 #### Abstrakt

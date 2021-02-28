@@ -4,7 +4,7 @@ import argparse
 import sys
 
 f_stack = [None]
-
+#global variable for avaliable frames
 ramec = {
     'GF': {},
     'LF': None,
@@ -117,7 +117,7 @@ def DEFVAR():
     m_frame = ramec.get(val1[:2])
     if m_frame is None:
         eprint("frame missing")
-        exit(54)
+        exit(55)
 
     if val1[3:] in m_frame:
         eprint("redefinition of variable")
@@ -142,7 +142,7 @@ def POPFRAME():
     ramec['TF'] = ramec['LF']
     ramec['LF'] = f_stack.pop()
 
-
+#help structure for CALL/RETURN instructions
 store_calls = [None]
 
 
@@ -161,7 +161,7 @@ def RETURN():
         exit(56)
     i = tmp
 
-
+#help structure for stack instructions
 val_stack = [None]
 
 
@@ -209,16 +209,14 @@ def IDIV():
 
 
 def LT():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string',
-                                                                                       'float']:
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string','float']:
         eprint('type mismatch')
         exit(53)
     set_val(val1, get_val(type2, val2) < get_val(type3, val3), 'bool')
 
 
 def GT():
-    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string',
-                                                                                       'float']:
+    if get_type(type2, val2) != get_type(type3, val3) or get_type(type3, val3) not in ['int', 'bool', 'string','float']:
         eprint('type mismatch')
         exit(53)
     set_val(val1, get_val(type2, val2) > get_val(type3, val3), 'bool')
@@ -279,7 +277,7 @@ def STRI2INT():
         exit(53)
     stri = get_val(type2, val2)
     index = get_val(type3, val3)
-    if index < 0 or index > len(stri):
+    if index < 0 or index >= len(stri):
         eprint('stri2int error')
         exit(58)
 
@@ -299,8 +297,8 @@ def READ():
     _vstup = inputs.readline()
     flag = '\n' in _vstup
     vstup = _vstup.rstrip('\n')
-
-    if typ == 'string' and flag:
+    #empty/incorect input -> nil
+    if typ == 'string' and (flag or (len(vstup) > 0)):
         set_val(val1, vstup, 'string')
     elif len(vstup) == 0:
         set_val(val1, 'nil', 'nil')
@@ -328,7 +326,7 @@ def WRITE():
     if get_type(type1, val1) == 'float':
         print(float.hex(stri), end='')
     elif get_type(type1, val1) == 'nil':
-        return
+        return #''
     elif get_type(type1, val1) == 'bool':
         print(str(stri).lower(), end='')
     else:
@@ -368,14 +366,14 @@ def SETCHAR():
         exit(53)
     stri = get_val(type1, val1)
     index = get_val(type2, val2)
-    if index < 0 or index > len(stri) or len(get_val(type3, val3)) < 1:
+    if index < 0 or index >= len(stri) or len(get_val(type3, val3)) < 1:
         eprint('setchar error')
         exit(58)
     set_val(val1, stri[:index] + get_val(type3, val3)[0] + stri[index+1:], 'string')
 
 
 def TYPE():
-    #get_type but unint var is allowed
+    #get_type but uninitalized var is allowed
     if type2 == 'var':
         m_frame = ramec.get(val2[:2])
         if m_frame is None:
@@ -465,7 +463,7 @@ def DPRINT():
 
 
 def BREAK():
-    eprint('state of interpret:')
+    eprint('state of interpret:', str(i)+'. line\nLF:', ramec['LF'], '\nTF:', ramec['TF'], '\nGF:', ramec['GF'])
 
 
 def INT2FLOAT():
@@ -494,6 +492,7 @@ def DIV():
 
 # STACK extension
 def CLEARS():
+    global val_stack
     val_stack = [None]
 
 
@@ -614,7 +613,7 @@ def STRI2INTS():
     if val_stack[-1]['type'] != 'string' or symb2['type'] != 'int':
         exit(53)
     index = symb2['val']
-    if index < 0 or index > len(val_stack[-1]['val']):
+    if index < 0 or index >= len(val_stack[-1]['val']):
         exit(58)
 
     try:
@@ -666,6 +665,7 @@ def JUMPIFNEQS():
     elif symb1['val'] != symb2['val']:
         i = temp
 
+#list of avaliable instruction with interpret function to call and signature for lexical/syntax analysis
 instructions = {
     "MOVE": {'call': MOVE, 'types': ["var", "symb", ]},
     "CREATEFRAME": {'call': CREATEFRAME, 'types': []},
@@ -789,7 +789,7 @@ if __name__ == "__main__":
         exit(32)
     # check instructions in xml
     for inst in root:
-        if inst.tag != 'instruction' or inst.get('order') is None or instructions.get(inst.get('opcode'), {}).get(
+        if inst.tag != 'instruction' or inst.get('order') is None or instructions.get(xstr(inst.get('opcode')).upper(), {}).get(
                 'call') is None or len(inst.attrib) != 2:
             exit(32)
         try:
@@ -799,7 +799,7 @@ if __name__ == "__main__":
 
         # check args-xml need to sort first
         inst[:] = sorted(inst, key=lambda child: child.tag)
-        arg_list = instructions.get(inst.get('opcode'))['types']
+        arg_list = instructions.get(inst.get('opcode').upper())['types']
         if len(inst) != len(arg_list):
             exit(32)
         for arg in range(len(arg_list)):
@@ -808,7 +808,7 @@ if __name__ == "__main__":
                 exit(32)
 
             # transform escaped string chars
-            if argx.get('type') == 'string':
+            if argx.get('type').lower() == 'string':
                 reg = re.compile('\\\\(\d{3})')
 
                 def replace(match):
@@ -817,7 +817,7 @@ if __name__ == "__main__":
                 argx.text = reg.sub(replace, xstr(argx.text))
 
             # lexical & syntax check
-            if not argcheck(arg_list[arg], argx.get('type'), xstr(argx.text)):
+            if not argcheck(arg_list[arg], argx.get('type').lower(), xstr(argx.text)):
                 exit(32)
 
     if len(order_array) != len(set(order_array)) or any(i < 1 for i in order_array):
@@ -828,7 +828,7 @@ if __name__ == "__main__":
 
     # prepare labels
     labels = {}
-    for instruction in [i for i in root if i.get('opcode') == 'LABEL']:
+    for instruction in [i for i in root if i.get('opcode').upper() == 'LABEL']:
         if instruction[0].text in labels:
             eprint("redefined label")
             exit(52)
@@ -839,7 +839,7 @@ if __name__ == "__main__":
     ma = len(root)
     while i < ma:
         ac_in = root[i]
-        ac_opc = ac_in.get('opcode')
+        ac_opc = ac_in.get('opcode').upper()
 
         type1 = None
         val1 = None
@@ -848,11 +848,11 @@ if __name__ == "__main__":
         type3 = None
         val3 = None
         try:
-            type1 = ac_in.find('arg1').get('type')
+            type1 = ac_in.find('arg1').get('type').lower()
             val1 = ac_in.find('arg1').text
-            type2 = ac_in.find('arg2').get('type')
+            type2 = ac_in.find('arg2').get('type').lower()
             val2 = ac_in.find('arg2').text
-            type3 = ac_in.find('arg3').get('type')
+            type3 = ac_in.find('arg3').get('type').lower()
             val3 = ac_in.find('arg3').text
         except:
             pass

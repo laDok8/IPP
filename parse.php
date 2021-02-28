@@ -1,5 +1,6 @@
 <?php
 
+#lsit with allowed instructions and their signature
 $instruction_set =array(
     "MOVE" => array("var", "symb", ),
     "CREATEFRAME" => array(),
@@ -50,7 +51,7 @@ $instruction_set =array(
         return count($m1[0]) == count($m2[0]);
 
     }
-    #chence XML chars to special entities
+    #convert XML chars to special entities
     function sanitize($string){
         $string = str_replace('&','&amp;',$string);
         $string = str_replace('<','&lt;',$string);
@@ -63,7 +64,7 @@ $instruction_set =array(
     function parseInput(){
         global $instruction_set;
 
-        #remove coment and strip
+        #remove coment and strip & remove leading empty lines
         while($line = fgets(STDIN)) {
             $line = trim(preg_replace("/(?<!\\\\)#.*/", '', $line));
             if(strlen($line)>0)
@@ -74,7 +75,7 @@ $instruction_set =array(
             fprintf(STDERR,"wrong header\n");
             exit(21);
         }
-
+        #create XML header
         $ins_count = 1;
         $doc = new DOMDocument('1.0','UTF-8');
         $doc->formatOutput = true;
@@ -82,6 +83,7 @@ $instruction_set =array(
         $root->setAttribute('language', "IPPcode21");
         $root = $doc->appendChild($root);
 
+        #lexical/syntax analysis for each line
         while( $line = fgets(STDIN)) {
             #remove comments
             $line = preg_replace("/(?<!\\\\)#.*/",'',$line);
@@ -92,7 +94,7 @@ $instruction_set =array(
                 continue;
             $matches[0] = strtoupper($matches[0]);
 
-            #create DOC element
+            #create DOC element for instruction
             $inst = $doc->createElement('instruction');
             $inst->setAttribute('order',$ins_count);
             $inst->setAttribute('opcode',$matches[0]);
