@@ -45,8 +45,8 @@ if(!is_dir($dir))
     exit(41);
 
 $parse_script = 'parse.php';
-if(array_key_exists('parse_script',$options))
-    $parse_script = $options['parse_script'];
+if(array_key_exists('parse-script',$options))
+    $parse_script = $options['parse-script'];
 fopen($parse_script,'r') or exit(41);
 
 $int_script = 'interpret.py';
