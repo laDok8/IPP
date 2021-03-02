@@ -1,5 +1,11 @@
 <?php
-#main
+
+#check file existence and readability
+function tryopen($file,$mode,$ret){
+    $fp = fopen($file,$mode) or exit($ret);
+    fclose($fp);
+}
+#MAIN
 
 #parsing arguments
 ini_set('display_errors', 'stderr');
@@ -47,12 +53,12 @@ if(!is_dir($dir))
 $parse_script = 'parse.php';
 if(array_key_exists('parse-script',$options))
     $parse_script = $options['parse-script'];
-fopen($parse_script,'r') or exit(41);
+tryopen($parse_script,'r',41);
 
 $int_script = 'interpret.py';
 if(array_key_exists('int-script',$options))
     $int_script = $options['int-script'];
-fopen($int_script,'r') or exit(41);
+tryopen($int_script,'r',41);
 
 $parse_only = false;
 if(array_key_exists('parse-only',$options))
@@ -135,12 +141,12 @@ foreach ($files as $iter){
     #check readability
     if(!is_readable($path))
         exit(41);
-    fopen("$path/$file.src",'r') or exit(11);
+    tryopen("$path/$file.src",'r',11);
     #create empty .in .out and .rc
     if(file_exists("$path/$file.in") == false)
-        fopen("$path/$file.in",'w') or exit(11);
+        tryopen("$path/$file.in",'w',11);
     if(file_exists("$path/$file.out") == false)
-        fopen("$path/$file.out",'w') or exit(11);
+        tryopen("$path/$file.out",'w',11);
     $frc = null;
     if(file_exists("$path/$file.rc") == false) {
         $frc = fopen("$path/$file.rc",'w+') or exit(11);
@@ -153,11 +159,12 @@ foreach ($files as $iter){
     fseek($frc,0,SEEK_SET);
     $rcval = intval(fread($frc,filesize("$path/$file.rc")));
     $pass = true;
+    fclose($frc);
 
     if($parse_only == true){
         #file exist ?
-        fopen($jexamxml,'r') or exit(41);
-        fopen($jexamcfg,'r') or exit(41);
+        tryopen($jexamxml,'r',41);
+        tryopen($jexamcfg,'r',41);
 
         exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
@@ -247,4 +254,5 @@ foreach($res_arr as $key => $res_dirs){
 #creating html file
 $html_file = fopen('tests.html','w') or exit(12);
 fprintf($html_file,"<!DOCTYPE html>\n".$dom->saveHTML());
+fclose($html_file);
 ?>

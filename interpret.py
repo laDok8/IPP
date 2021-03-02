@@ -859,3 +859,8 @@ if __name__ == "__main__":
 
         instructions[ac_opc]['call']()
         i += 1
+    #close files
+    if args.source is not None:
+        source.close()
+    if args.input is not None:
+        inputs.close()
