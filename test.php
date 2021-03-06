@@ -87,13 +87,11 @@ if($int_only and $parse_only)
 //files contains all found files and their paths
 //$files[i]['path'], $files[i]['filename'],
 $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
+if($recurse == false)
+    $iterator->setMaxDepth(0);
 $files = [];
 foreach ($iterator as $filename => $file) {
     $path = pathinfo($filename);
-    if($path['filename'] == '.' or $path['basename'] == '.')
-        continue;
-    if($recurse == false and $path['dirname'] != $dir)
-        continue;
     #we only need existence of src file ( assuming all other files are in same directory)
     if(array_key_exists('extension',$path) == false or $path['extension'] != 'src')
         continue;
@@ -129,6 +127,9 @@ $pass_count = 0;
 $fail_count = 0;
 $res_arr =[];
 #testing
+if($parse_only == true) {
+    $delta = tempnam('.','IPP21_delta');
+}
 foreach ($files as $iter){
     $retval = null;
     $output = null;
@@ -165,10 +166,9 @@ foreach ($files as $iter){
         #file exist ?
         tryopen($jexamxml,'r',41);
         tryopen($jexamcfg,'r',41);
-
         exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
         if( $retval == 0 || $retval!=$rcval)
-            exec("timeout 1s java -jar $jexamxml $tmp $path/$file.out delta.xml $jexamcfg", $output, $retval);
+            exec("timeout 1s java -jar $jexamxml $tmp $path/$file.out $delta $jexamcfg", $output, $retval);
         if($retval==$rcval){
             $pass_count++;
             $p->setAttribute('class','green');
@@ -213,6 +213,9 @@ foreach ($files as $iter){
     unlink($tmp);
 
 }
+if($parse_only == true){
+    unlink($delta);
+}
 
 #total test info
 $total_count = $pass_count+$fail_count;
@@ -251,8 +254,6 @@ foreach($res_arr as $key => $res_dirs){
     $body->appendChild($sum);
 }
 
-#creating html file
-$html_file = fopen('tests.html','w') or exit(12);
-fprintf($html_file,"<!DOCTYPE html>\n".$dom->saveHTML());
-fclose($html_file);
+#outputing html file
+echo $dom->saveHTML();
 ?>
