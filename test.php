@@ -127,8 +127,10 @@ $pass_count = 0;
 $fail_count = 0;
 $res_arr =[];
 #testing
-if($parse_only == true) {
+if($parse_only) {
     $delta = tempnam('.','IPP21_delta');
+    tryopen($jexamxml,'r',41);
+    tryopen($jexamcfg,'r',41);
 }
 foreach ($files as $iter){
     $retval = null;
@@ -162,58 +164,40 @@ foreach ($files as $iter){
     $pass = true;
     fclose($frc);
 
-    if($parse_only == true){
-        #file exist ?
-        tryopen($jexamxml,'r',41);
-        tryopen($jexamcfg,'r',41);
-        exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
-        if( $retval == 0 || $retval!=$rcval)
-            exec("timeout 1s java -jar $jexamxml $tmp $path/$file.out $delta $jexamcfg", $output, $retval);
-        if($retval==$rcval){
-            $pass_count++;
-            $p->setAttribute('class','green');
-        } else{
-            $fail_count++;
-            $p->setAttribute('class','red');
-        }
-    } elseif($int_only == true){
-        exec("python3 $int_script --source $path/$file.src  --input $path/$file.in > $tmp",$output,$retval);
-        if($retval == 0 || $retval!=$rcval){
-            exec("timeout 1s diff $path/$file.out $tmp",$output,$retval);
-        }
-        if($retval==$rcval){
-            $pass_count++;
-            $p->setAttribute('class', 'green');
-        } else{
-            $fail_count++;
-            $p->setAttribute('class','red');
-        }
+    if($parse_only){
+        exec("timeout 5s php $parse_script < $path/$file.src > $tmp",$output,$retval);
+        if($retval == 0)
+            exec("timeout 5s java -jar $jexamxml $tmp $path/$file.out $delta $jexamcfg", $output, $retval);
+    } elseif($int_only){
+        exec("timeout 5s python3 $int_script --source $path/$file.src  --input $path/$file.in > $tmp",$output,$retval);
+        if($retval == 0)
+            exec("timeout 5s diff $path/$file.out $tmp",$output,$retval);
     } else{
         $tmp_out = tempnam('.','IPP21_2');
         #parse & int
-        exec("php $parse_script < $path/$file.src > $tmp",$output,$retval);
-        if( $retval == 0 || $retval!=$rcval)
-            exec("timeout 3s python3 $int_script --source $tmp  --input $path/$file.in > $tmp_out",$output,$retval);
-        if( $retval == 0 || $retval!=$rcval)
-            exec("timeout 1s diff $path/$file.out $tmp_out",$output,$retval);
-        if($retval==$rcval) {
-            $pass_count++;
-            $p->setAttribute('class', 'green');
-        }else{
-            $fail_count++;
-            $p->setAttribute('class','red');
-        }
-
+        exec("timeout 5s php $parse_script < $path/$file.src > $tmp",$output,$retval);
+        if($retval == 0)
+            exec("timeout 5s python3 $int_script --source $tmp  --input $path/$file.in > $tmp_out",$output,$retval);
+        if($retval == 0)
+            exec("timeout 5s diff $path/$file.out $tmp_out",$output,$retval);
         unlink($tmp_out);
     }
+
+    if($retval==$rcval) {
+        $pass_count++;
+        $p->setAttribute('class', 'green');
+    }else{
+        $fail_count++;
+        $p->setAttribute('class','red');
+    }
+
     #add files to dir structure for HTML creation
     if(!array_key_exists($path,$res_arr))
         $res_arr[$path] = [];
     array_push($res_arr[$path],$p);
     unlink($tmp);
-
 }
-if($parse_only == true){
+if($parse_only){
     unlink($delta);
 }
 
