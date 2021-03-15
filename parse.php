@@ -39,18 +39,23 @@ $instruction_set =array(
     "BREAK" => array(),
     "INT2FLOAT" => array("var", 'symb',),
     "FLOAT2INT" => array("var", "symb", ),
-    "DIV" => array("var", 'symb', 'symb',)
-
+    "DIV" => array("var", 'symb', 'symb',),
+    "CLEARS" => array(),
+    "ADDS" => array(),
+    "SUBS" => array(),
+    "MULS" => array(),
+    "IDIVS" => array(),
+    "LTS" => array(),
+    "GTS" => array(),
+    "EQS" => array(),
+    "ANDS" => array(),
+    "ORS" => array(),
+    "NOTS" => array(),
+    "INT2CHARS" => array(),
+    "STRI2INTS" => array(),
+    "JUMPIFEQS" => array("label"),
+    "JUMPIFNEQS" => array("label"),
 );
-
-    #lexical analysis check - all escaped character are correct
-    function escaped($string ){
-        //regex returns weird 2d array
-        preg_match_all('/\\\\/',$string,$m1);
-        preg_match_all('/\\\\\d{3}/',$string,$m2);
-        return count($m1[0]) == count($m2[0]);
-
-    }
     #convert XML chars to special entities
     function sanitize($string){
         $string = str_replace('&','&amp;',$string);
@@ -141,8 +146,8 @@ $instruction_set =array(
                                     exit(23);
                                 }
                                 break;
-                            case 'string':
-                                if(!preg_match('/^\S*$/',$value) or !escaped($value) ){
+                            case 'string': //(all escaped character are correct)
+                                if(!preg_match('/^(((?!\\\\)\S)|(\\\\\d{3}))*$/m',$value)){
                                     fprintf(STDERR,"lexical error - string\n");
                                     exit(23);
                                 }

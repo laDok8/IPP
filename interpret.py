@@ -17,7 +17,7 @@ regex = {
     'var': '^(?:LF|GF|TF)@[a-zA-Z_\-$&%*!?][\w\-$&%*!?]*$',
     'int': '^[+-]?[\d]+$',
     'bool': '^true|false$',
-    'string': '',
+    'string': '^(((?!\\\\)\S)|(\\\\\d{3}))*$',
     'nil': '^nil$',
     'label': '^[a-zA-Z_\-$&%*!?][\w\-$&%*!?]*$',
     'type': '^(int|bool|string|nil|float)$',
@@ -807,6 +807,10 @@ if __name__ == "__main__":
             if (argx.tag != 'arg' + str(arg + 1)) or argx.get('type') is None or len(argx.attrib) != 1:
                 exit(32)
 
+            # lexical & syntax check
+            if not argcheck(arg_list[arg], argx.get('type').lower(), xstr(argx.text)):
+                exit(32)
+
             # transform escaped string chars
             if argx.get('type').lower() == 'string':
                 reg = re.compile('\\\\(\d{3})')
@@ -815,10 +819,6 @@ if __name__ == "__main__":
                     return chr(int(match.group(1)))
 
                 argx.text = reg.sub(replace, xstr(argx.text))
-
-            # lexical & syntax check
-            if not argcheck(arg_list[arg], argx.get('type').lower(), xstr(argx.text)):
-                exit(32)
 
     if len(order_array) != len(set(order_array)) or any(i < 1 for i in order_array):
         exit(32)
