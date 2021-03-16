@@ -147,7 +147,7 @@ $instruction_set =array(
                                 }
                                 break;
                             case 'string': //(all escaped character are correct)
-                                if(!preg_match('/^(((?!\\\\)\S)|(\\\\\d{3}))*$/m',$value)){
+                                if(!preg_match('/^(((?!\\\\)\S)|(\\\\\d{3}))*$/',$value)){
                                     fprintf(STDERR,"lexical error - string\n");
                                     exit(23);
                                 }
