@@ -1,3 +1,5 @@
+#autor: Ladislav Dokoupil
+
 import re
 import xml.etree.ElementTree as ET
 import argparse

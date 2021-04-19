@@ -1,5 +1,5 @@
 <?php
-
+#autor: Ladislav Dokoupil
 #check file existence and readability
 function tryopen($file,$mode,$ret){
     $fp = fopen($file,$mode) or exit($ret);

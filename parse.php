@@ -1,6 +1,7 @@
 <?php
+#autor: Ladislav Dokoupil
 
-#lsit with allowed instructions and their signature
+#list with allowed instructions and their signature
 $instruction_set =array(
     "MOVE" => array("var", "symb", ),
     "CREATEFRAME" => array(),

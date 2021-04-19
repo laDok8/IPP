@@ -3,14 +3,14 @@
 ## Login: xdokou14
 ### parse.php
 #### Abstrakt
-Analyzátor IPP kódu je rozdělen do několika spolupracujících částí. Nejprve si načtený text rozdělím na tokeny instrukcí
-a argumentů, nad kterými následně provádím lexikální a sémantickou analýzu. Pokud vše proběhne bez chyb, uložím výsledek
+Analyzátor IPP kódu je rozdělen do několika spolupracujících částí. Nejprve je načtený text rozdělen na tokeny instrukcí
+a argumentů, nad kterými se následně provádí lexikální a sémantické kontroly. Pokud vše proběhne bez chyb, uloží se výsledek
 do XML souboru.
 #### Rozdělení na tokeny
-Vstupní text načítám po řádcích, které si po odstranění komentářů rozdělím podle výskytu netisknutelných znaků na pole tokenů.
+Vstupní text se načítá po řádcích, které se po odstranění komentářů rozdělí podle výskytu netisknutelných znaků na pole tokenů.
 První token zde značí operační kód a ostatní jeho argumenty.
 #### Syntaktická a lexikální analýza
-Pro syntaktyckou analýzu jsem si vytvořil statickou tabulku všech příkazů tvaru:
+Pro syntaktyckou analýzu je vytvořena statická tabulka všech příkazů tvaru:
 `"OPCODE" => array( "ARG1", "ARG2", ),`.
 Pokud se operační kód v tabulce nevyskytuje, vrací program kód chyby. V opačném případě je zkontrolováno, zda odpovídá 
 skutečný počet argumentů se vzorem v tabulce a následně je pro každý argument provedena kontrola.
